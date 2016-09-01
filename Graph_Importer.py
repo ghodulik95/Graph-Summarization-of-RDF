@@ -53,7 +53,7 @@ def import_graph_regular(dbname, cutoff=50, year_s=1990, year_e=1992):
     g.add_vertices(max_node_id + 1)
     g.add_edges(edges)
 
-    return g, id_to_node_name
+    return g, id_to_node_name, node_name_to_id
 
 def can_skip(s,p,o):
     if o[0] == '"':
