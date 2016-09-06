@@ -3,16 +3,20 @@ import igraph as ig
 import unique_colors
 from Abstract_Node_Filterer import Abstract_Node_Filterer
 from Abstract_Node_Selector import Abstract_Node_Selector
+from Abstract_Merge_Logger import Abstract_Merge_Logger
 import math
 
 class Abstract_Graph_Summary(object):
-    def __init__(self,graph,oid_to_uri,uri_to_oid,macro_filename,micro_filename):
+    def __init__(self,graph,oid_to_uri,uri_to_oid,macro_filename,micro_filename,log_merges=False,**kwargs):
         """
         :type graph: ig.Graph
         :type oid_to_uri: Dictionary
         :type uri_to_oid: Dictionary
         """
+        if not self.check_kwargs(**kwargs):
+            raise ValueError(self.get_Value_Error_message(**kwargs))
         self.summary_finished = False
+        self.log_merges=log_merges
         self.g = graph
         self.oid_to_uri = oid_to_uri
         self.uri_to_oid = uri_to_oid
@@ -28,13 +32,38 @@ class Abstract_Graph_Summary(object):
 
         self.node_selector = Abstract_Node_Selector()
         self.node_filterer = Abstract_Node_Filterer()
+        self.merge_logger = None
 
-        self.on_before_summarization()
+        self.on_before_summarization(**kwargs)
         self.summarize()
         self.macro.close()
         self.micro.close()
 
-    def on_before_summarization(self):
+    def expected_arguments(self):
+        return set()
+
+    def get_Value_Error_message(self,**kwargs):
+        msg = "Expected arguments: "
+        expected = self.expected_arguments()
+        for key in expected:
+            msg += key+","
+        msg = msg [:-1]
+        msg += '\n'
+        msg += "Given: "
+        for key in kwargs:
+            msg += key+","
+        msg = msg[:-1]
+        msg += '\n'
+        return msg
+
+    def check_kwargs(self, **kwargs):
+        expected = self.expected_arguments()
+        for key in expected:
+            if key not in kwargs.keys():
+                return False
+        return True
+
+    def on_before_summarization(self,**kwargs):
         pass
 
     def make_blank_summary(self):
@@ -55,14 +84,29 @@ class Abstract_Graph_Summary(object):
     def node_select(self,s):
         return self.node_selector.select_node(s)
 
-    def merge_supernodes(self,snodes):
+    def merge_supernodes(self,snodes,u):
+        """
+        :param snodes:
+        :param u:
+        :type snodes: set
+        :type u: string
+        :return:
+        """
         assert len(snodes) > 1
+        if self.log_merges:
+            copy_snodes = snodes.copy()
+            if u in copy_snodes:
+                copy_snodes.remove(u)
+            self.merge_logger.log_merge(u,copy_snodes)
+        return self.merge_snodes(snodes)
+
+    def merge_snodes(self,snodes):
         self.s.add_vertices(1)
         new_index = self.s.vcount() - 1
         new_name = self.get_supernode_name(self.max_id)
         self.s.vs[new_index]['name'] = new_name
 
-        print(snodes)
+        # print(snodes)
         current_ids = [self.s.vs.find(name).index for name in snodes]
         new_contains = set()
         for snode in current_ids:
@@ -222,7 +266,7 @@ class Abstract_Graph_Summary(object):
             to_merge.add(u)
             merged_name = None
             if len(to_merge) > 1:
-                merged_name = self.merge_supernodes(to_merge)
+                merged_name = self.merge_supernodes(to_merge,u)
             self.update_unvisited(unvisited,to_merge, merged_name)
             num_iterations += 1
         self.put_edges_in_summary()
@@ -265,6 +309,8 @@ class Abstract_Graph_Summary(object):
         print("----------Intial Graph----------", file=self.macro)
         print("Vertices: %d" % num_vertices, file=self.macro)
         print("Edges: %d" % num_edges,file=self.macro)
+        articulation_points = self.g.articulation_points()
+        print("Articulation Points: "+str(articulation_points),file=self.macro)
 
     def final_logging(self,num_iterations):
         print("----------Summary----------",file=self.macro)

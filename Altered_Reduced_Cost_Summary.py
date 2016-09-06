@@ -1,22 +1,19 @@
 from Graph_Summary import Abstract_Graph_Summary
+from Altered_Reduced_Cost_Node_Filterer import Altered_Reduced_Cost_Node_Filterer
 from Uniform_Random_Node_Selector import Uniform_Random_Node_Selector
-from Pure_Randomized_Node_Filterer import Pure_Randomized_Node_Fileterer
 from Single_Merge_Logger import Single_Merge_Logger
 from Merge_Identical_Nodes_Preprocessor import Merge_Identical_Nodes_Preprocessor
-import numpy.random as nprand
 
-class Uniform_Pure_Randomized_Summary(Abstract_Graph_Summary):
-    def __init__(self,graph,oid_to_uri,uri_to_oid,macro_filename,micro_filename):
-        """
-        :type graph: ig.Graph
-        :type oid_to_uri: Dictionary
-        :type uri_to_oid: Dictionary
-        """
-        Abstract_Graph_Summary.__init__(self,graph,oid_to_uri,uri_to_oid,macro_filename,micro_filename,log_merges=True)
+class Altered_Reduced_Cost_Summary(Abstract_Graph_Summary):
+    def __init__(self, graph, oid_to_uri, uri_to_oid, macro_filename, micro_filename, **kwargs):
+        Abstract_Graph_Summary.__init__(self, graph, oid_to_uri, uri_to_oid, macro_filename, micro_filename,log_merges=True, **kwargs)
 
-    def on_before_summarization(self):
+    def expected_arguments(self):
+        return {"initial_rc_cutoff","num_skips","step"}
+
+    def on_before_summarization(self,initial_rc_cutoff,num_skips,step):
         self.node_selector = Uniform_Random_Node_Selector()
-        self.node_filterer = Pure_Randomized_Node_Fileterer(self)
+        self.node_filterer = Altered_Reduced_Cost_Node_Filterer(self,initial_rc_cutoff,num_skips,step)
         self.merge_logger = Single_Merge_Logger(self.micro, self)
         preprocessor = Merge_Identical_Nodes_Preprocessor(self)
         preprocessor.pre_process()
@@ -38,7 +35,8 @@ class Uniform_Pure_Randomized_Summary(Abstract_Graph_Summary):
         :type merged_name: String
         :return:
         """
-        Abstract_Graph_Summary.update_unvisited(self,unvisited,to_merge,merged_name)
-        if merged_name is not None:
-            unvisited.add(merged_name)
+        if len(to_merge) > 1 or self.node_filterer.zero_cutoff:
+            Abstract_Graph_Summary.update_unvisited(self,unvisited,to_merge,merged_name)
+            if merged_name is not None:
+                unvisited.add(merged_name)
 

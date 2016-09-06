@@ -10,7 +10,7 @@ class Uniform_Dense_Summary(Abstract_Graph_Summary):
         self.node_selector = Uniform_Random_Node_Selector()
         self.node_filterer = Dense_Subgraphs_Filterer(self.g)
 
-    def merge_supernodes(self, oids):
+    def merge_snodes(self, oids):
         self.s.add_vertices(1)
         new_index = self.s.vcount() - 1
         new_name = self.get_supernode_name(self.max_id)
