@@ -7,7 +7,7 @@ from Abstract_Merge_Logger import Abstract_Merge_Logger
 import math
 
 class Abstract_Graph_Summary(object):
-    def __init__(self,graph,oid_to_uri,uri_to_oid,macro_filename,micro_filename,log_merges=False,**kwargs):
+    def __init__(self,graph,oid_to_uri,uri_to_oid,macro_filename,micro_filename,log_merges=False,remove_one_degree=False,**kwargs):
         """
         :type graph: ig.Graph
         :type oid_to_uri: Dictionary
@@ -15,6 +15,9 @@ class Abstract_Graph_Summary(object):
         """
         if not self.check_kwargs(**kwargs):
             raise ValueError(self.get_Value_Error_message(**kwargs))
+        if remove_one_degree:
+            one_degree = graph.vs.select(_degree=1)
+            graph.delete_vertices(one_degree)
         self.summary_finished = False
         self.log_merges=log_merges
         self.g = graph
@@ -101,6 +104,23 @@ class Abstract_Graph_Summary(object):
         return self.merge_snodes(snodes)
 
     def merge_snodes(self,snodes):
+        return self.merge_snodes_given_supernode_names(snodes)
+
+    def merge_snodes_given_oids(self,oids):
+        self.s.add_vertices(1)
+        new_index = self.s.vcount() - 1
+        new_name = self.get_supernode_name(self.max_id)
+        self.s.vs[new_index]['contains'] = oids
+        self.s.vs[new_index]['name'] = new_name
+        self.max_id += 1
+        original_names = [self.oid_to_sname[i] for i in oids]
+        current_ids = [self.s.vs.find(name) for name in original_names]
+        for oid in oids:
+            self.oid_to_sname[oid] = new_name
+        self.s.delete_vertices(current_ids)
+        return new_name
+
+    def merge_snodes_given_supernode_names(self,snodes):
         self.s.add_vertices(1)
         new_index = self.s.vcount() - 1
         new_name = self.get_supernode_name(self.max_id)
@@ -123,10 +143,10 @@ class Abstract_Graph_Summary(object):
 
     #Given a supernode, returns all supernodes which contain at least one node which is a two hop neighbor
     # of a node in the given supernode
-    def exact_n_hop_neighbors(self,supernode_name,n):
+    def exact_n_hop_neighbors(self,supernode_name,n,remove_seed=True):
         original_n_hop_neighbors = self.exact_n_hop_original_neighbors_from_supernode_name(supernode_name,n)
         supernodes = set([self.oid_to_sname[i] for i in original_n_hop_neighbors])
-        if supernode_name in supernodes:
+        if remove_seed and supernode_name in supernodes:
             supernodes.remove(supernode_name)
         return supernodes
 
@@ -164,6 +184,9 @@ class Abstract_Graph_Summary(object):
                 if self.g.are_connected(oid1,oid2):
                     count += 1
         return count
+
+    def get_percentage_of_potential_connections_present(self,snodename1,snodename2):
+        return float(self.get_number_of_connections_in_original(snodename1,snodename2)) / self.get_potential_number_of_connections_in_original(snodename1,snodename2)
 
     def add_subtractions(self,u_name,v_name):
         u = self.s.vs.find(u_name)
@@ -233,7 +256,7 @@ class Abstract_Graph_Summary(object):
             #e['label'] = self.get_support_of_superedge(source_name, target_name)
 
     def get_supernode_label(self,supernode_object):
-        contains = supernode_object['contains']
+        contains = sorted(list(supernode_object['contains']))
         ret = ""
         for n in contains:
             ret += str(n)+","
@@ -264,6 +287,7 @@ class Abstract_Graph_Summary(object):
             merge_candidates = self.get_merge_candidates(u)
             to_merge = self.filter_merge_candidates(u,merge_candidates)
             to_merge.add(u)
+            #print(to_merge)
             merged_name = None
             if len(to_merge) > 1:
                 merged_name = self.merge_supernodes(to_merge,u)
