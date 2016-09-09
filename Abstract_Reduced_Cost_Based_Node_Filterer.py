@@ -61,3 +61,65 @@ class Abstract_Reduced_Cost_Based_Node_Filterer(Abstract_Node_Filterer):
             else:
                 cost += joined_actual
         return cost
+
+    def get_joined_cost_from_profiles(self,p1,p2):
+        potential_neighbors = p1.neighbors.union(p2.neighbors)
+        cost = 0
+        for n in potential_neighbors:
+            a = p1.get_actual(n) + p2.get_actual(n)
+            p = p1.get_potential(n) + p2.get_potential(n)
+            if p - a + 1 <= a:
+                cost += p - a + 1
+            else:
+                cost += a
+
+        return cost
+
+    def get_reduced_cost_from_profiles(self,p1,p2):
+        cost_p1 = p1.cost
+        cost_p2 = p2.cost
+        cost_p1_p2 = self.get_joined_cost_from_profiles(p1,p2)
+        return float(cost_p1 + cost_p2 - cost_p1_p2) / (cost_p1 + cost_p2)
+
+class Node_Profile(object):
+    def __init__(self,snode_name,graph_summary):
+        """
+        :type graph_summary: Abstract_Graph_Summary
+        :param snode_name:
+        :param graph_summary:
+        """
+        self.graph_summary = graph_summary
+        snode_obj = graph_summary.s.vs.find(snode_name)
+        self.size = len(snode_obj['contains'])
+        self.neighbors = graph_summary.exact_n_hop_neighbors(snode_obj,1)
+        self.actual_connections = {}
+        self.potential_connections = {}
+        self.cost = 0
+        for n in self.neighbors:
+            a = graph_summary.get_number_of_connections_in_original(snode_name,n)
+            p = graph_summary.get_potential_number_of_connections_in_original(snode_name,n)
+            self.actual_connections[n] = a
+            self.potential_connections[n] = p
+            if p - a + 1 <= a:
+                self.cost += p - a + 1
+            else:
+                self.cost += a
+
+    def merge_with(self,p):
+        new_neighbors = p.neighbors.difference(self.neighbors)
+        for n in new_neighbors:
+            self.actual_connections[n] = p.actual_connections[n]
+            self.potential_connections = (p.size + self.size)*(p.potential_connections[n]/p.size)
+        #for n in self.neighbors:
+
+    def get_actual(self,n):
+        if n in self.neighbors:
+            return self.actual_connections[n]
+        else:
+            return 0
+
+    def get_potential(self,n):
+        if n in self.neighbors:
+            return self.potential_connections[n]
+        else:
+            return self.size * len(self.graph_summary.s.vs.find(n)['contains'])
