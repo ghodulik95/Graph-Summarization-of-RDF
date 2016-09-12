@@ -91,7 +91,7 @@ class Node_Profile(object):
         self.graph_summary = graph_summary
         snode_obj = graph_summary.s.vs.find(snode_name)
         self.size = len(snode_obj['contains'])
-        self.neighbors = graph_summary.exact_n_hop_neighbors(snode_obj,1)
+        self.neighbors = graph_summary.exact_n_hop_neighbors(snode_name,1)
         self.actual_connections = {}
         self.potential_connections = {}
         self.cost = 0
@@ -107,10 +107,15 @@ class Node_Profile(object):
 
     def merge_with(self,p):
         new_neighbors = p.neighbors.difference(self.neighbors)
-        for n in new_neighbors:
-            self.actual_connections[n] = p.actual_connections[n]
-            self.potential_connections = (p.size + self.size)*(p.potential_connections[n]/p.size)
-        #for n in self.neighbors:
+        all_neighbors = p.neighbors.union(self.neighbors)
+        for n in all_neighbors:
+            self.actual_connections[n] = p.get_actual(n) + self.get_actual(n)
+            if n in new_neighbors:
+                self.potential_connections[n] = (p.size + self.size)*(p.potential_connections[n]/p.size)
+            else:
+                self.potential_connections[n] = (p.size + self.size) * (self.potential_connections[n]/self.size)
+        self.neighbors.update(new_neighbors)
+
 
     def get_actual(self,n):
         if n in self.neighbors:

@@ -21,6 +21,7 @@ class Abstract_Graph_Summary(object):
         self.summary_finished = False
         self.log_merges=log_merges
         self.g = graph
+        self.annotate_original()
         self.oid_to_uri = oid_to_uri
         self.uri_to_oid = uri_to_oid
         self.macro = open(macro_filename,mode="w")
@@ -76,6 +77,10 @@ class Abstract_Graph_Summary(object):
 
     def get_supernode_name(self,num):
         return "S_"+str(num)
+
+    def annotate_original(self):
+        self.g.vs['bold'] = [False for _ in range(self.g.vcount())]
+        self.g.vs['iteration'] = ["" for _ in range(self.g.vcount())]
 
     def annotate_summary(self):
         if not self.summary_finished:
@@ -245,8 +250,10 @@ class Abstract_Graph_Summary(object):
             n['color'] = color
             for c in n['contains']:
                 self.g.vs[c]['color'] = color
-                self.g.vs[c]['label'] = "%d" % (c)
+                self.g.vs[c]['label'] = str(self.g.vs[c]['iteration']) +":" + str(c)
                 self.g.vs[c]['size'] = 30
+                if self.g.vs[c]['bold']:
+                    self.g.vs[c]['size'] = 40
         for e in self.s.es:
             if e['to_be_removed']:
                 e['color'] = "white"

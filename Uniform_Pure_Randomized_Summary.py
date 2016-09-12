@@ -18,8 +18,8 @@ class Uniform_Pure_Randomized_Summary(Abstract_Graph_Summary):
         self.node_selector = Uniform_Random_Node_Selector()
         self.node_filterer = Pure_Randomized_Node_Fileterer(self)
         self.merge_logger = Single_Merge_Logger(self.micro, self)
-        preprocessor = Merge_Identical_Nodes_Preprocessor(self)
-        preprocessor.pre_process()
+        #preprocessor = Merge_Identical_Nodes_Preprocessor(self)
+        #preprocessor.pre_process()
 
     def merge_supernodes(self,snodes,u):
         assert len(snodes) == 2

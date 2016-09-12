@@ -15,8 +15,8 @@ class Altered_Reduced_Cost_Summary(Abstract_Graph_Summary):
         self.node_selector = Uniform_Random_Node_Selector()
         self.node_filterer = Altered_Reduced_Cost_Node_Filterer(self,initial_rc_cutoff,num_skips,step)
         self.merge_logger = Single_Merge_Logger(self.micro, self)
-        preprocessor = Merge_Identical_Nodes_Preprocessor(self)
-        preprocessor.pre_process()
+        #preprocessor = Merge_Identical_Nodes_Preprocessor(self)
+        #preprocessor.pre_process()
 
     def merge_supernodes(self,snodes,u):
         assert len(snodes) == 2
