@@ -90,7 +90,7 @@ class Abstract_Graph_Summary(object):
                 self.s.vs[i]['contains'] = {i}
                 self.s.vs[i]['name'] = self.get_supernode_name(i)
                 self.oid_to_sname[i] = self.get_supernode_name(i)
-                #self.s.vs[i]['original_neighbors'] = set(self.g.vs[i].neighbors())
+                self.s.vs[i]['original_neighbors'] = set(self.g.neighbors(i))
 
     def node_select(self,s):
         return self.node_selector.select_node(s)
@@ -137,9 +137,12 @@ class Abstract_Graph_Summary(object):
         # print(snodes)
         current_ids = [self.s.vs.find(name).index for name in snodes]
         new_contains = set()
+        new_original_neighbors = set()
         for snode in current_ids:
             new_contains.update(set(self.s.vs[snode]['contains']))
+            new_original_neighbors.update(self.s.vs[snode]['original_neighbors'])
         self.s.vs[new_index]['contains'] = new_contains
+        self.s.vs[new_index]['original_neighbors'] = new_original_neighbors
         self.max_id += 1
         for oid in new_contains:
             self.oid_to_sname[oid] = new_name
@@ -163,6 +166,8 @@ class Abstract_Graph_Summary(object):
 
     def exact_n_hop_original_neighbors_from_supernode_name(self,supernode_name,n):
         supernode = self.s.vs.find(supernode_name)
+        if n == 1:
+            return supernode['original_neighbors']
         return self.exact_n_hop_original_neighbors_from_source(supernode['contains'],n)
 
     def exact_n_hop_original_neighbors_from_source(self,input_source,n):
@@ -306,7 +311,7 @@ class Abstract_Graph_Summary(object):
                 merged_name = self.merge_supernodes(to_merge,u)
             self.update_unvisited(unvisited,to_merge, merged_name)
             num_iterations += 1
-            if num_iterations % 10 == 0:
+            if num_iterations % 3 == 0:
                 now = time.time()
                 time_elapsed = now - start
                 total_time = time_elapsed * float(initial_unvisited_size) / float(initial_unvisited_size - len(unvisited))
