@@ -5,9 +5,10 @@ from Abstract_Node_Filterer import Abstract_Node_Filterer
 from Abstract_Node_Selector import Abstract_Node_Selector
 from Abstract_Merge_Logger import Abstract_Merge_Logger
 import math
+import time
 
 class Abstract_Graph_Summary(object):
-    def __init__(self,graph,oid_to_uri,uri_to_oid,macro_filename,micro_filename,log_merges=False,remove_one_degree=False,**kwargs):
+    def __init__(self,graph,oid_to_uri,uri_to_oid,macro_filename,micro_filename,log_merges=False,remove_one_degree=False,correction_both_directions = True, **kwargs):
         """
         :type graph: ig.Graph
         :type oid_to_uri: Dictionary
@@ -20,6 +21,7 @@ class Abstract_Graph_Summary(object):
             graph.delete_vertices(one_degree)
         self.summary_finished = False
         self.log_merges=log_merges
+        self.correction_both_directions = correction_both_directions
         self.g = graph
         self.annotate_original()
         self.oid_to_uri = oid_to_uri
@@ -88,6 +90,7 @@ class Abstract_Graph_Summary(object):
                 self.s.vs[i]['contains'] = {i}
                 self.s.vs[i]['name'] = self.get_supernode_name(i)
                 self.oid_to_sname[i] = self.get_supernode_name(i)
+                #self.s.vs[i]['original_neighbors'] = set(self.g.vs[i].neighbors())
 
     def node_select(self,s):
         return self.node_selector.select_node(s)
@@ -211,7 +214,8 @@ class Abstract_Graph_Summary(object):
 
     def add_correction(self,u,v,correction_dict):
         self.add_correction_with_direction(u,v,correction_dict)
-        self.add_correction_with_direction(v,u,correction_dict)
+        if self.correction_both_directions:
+            self.add_correction_with_direction(v,u,correction_dict)
 
     def add_correction_with_direction(self,u,v,correction_dict):
         if not correction_dict.has_key(u):
@@ -264,7 +268,7 @@ class Abstract_Graph_Summary(object):
 
     def get_supernode_label(self,supernode_object):
         contains = sorted(list(supernode_object['contains']))
-        ret = ""
+        ret = supernode_object['name']+":"
         for n in contains:
             ret += str(n)+","
         return ret
@@ -287,6 +291,8 @@ class Abstract_Graph_Summary(object):
     def summarize(self):
         self.initial_logging()
         unvisited = self.generate_original_unvisited()
+        start = time.time()
+        initial_unvisited_size = len(unvisited)
 
         num_iterations = 0
         while len(unvisited) > 0:
@@ -300,6 +306,12 @@ class Abstract_Graph_Summary(object):
                 merged_name = self.merge_supernodes(to_merge,u)
             self.update_unvisited(unvisited,to_merge, merged_name)
             num_iterations += 1
+            if num_iterations % 10 == 0:
+                now = time.time()
+                time_elapsed = now - start
+                total_time = time_elapsed * float(initial_unvisited_size) / float(initial_unvisited_size - len(unvisited))
+                remainder = total_time - time_elapsed
+                print("Elapsed time: %d, Estimated Time Remaining: %f" % ( time_elapsed, remainder))
         self.put_edges_in_summary()
         self.final_logging(num_iterations)
         self.make_drawable()
@@ -307,14 +319,20 @@ class Abstract_Graph_Summary(object):
     def get_num_additions(self):
         #Corrections are in pairs to be easily queryable
         num_additions = sum([len(self.additions[a]) for a in self.additions.keys()])
-        assert num_additions % 2 == 0
-        return num_additions / 2
+        assert num_additions % 2 == 0 or not self.correction_both_directions
+        if self.correction_both_directions:
+            return num_additions / 2
+        else:
+            return num_additions
 
     def get_num_subtractions(self):
         # Corrections are in pairs to be easily queryable
         num_subtractions = sum([len(self.subtractions[a]) for a in self.subtractions.keys()])
-        assert num_subtractions % 2 == 0
-        return num_subtractions / 2
+        assert num_subtractions % 2 == 0 or not self.correction_both_directions
+        if self.correction_both_directions:
+            return num_subtractions / 2
+        else:
+            return num_subtractions
 
     def get_num_corrections(self):
         return self.get_num_additions() + self.get_num_subtractions()

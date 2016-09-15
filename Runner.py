@@ -4,9 +4,11 @@ from Altered_Reduced_Cost_Summary import Altered_Reduced_Cost_Summary
 from Group_Reduced_Cost_Summary import Single_Sweep_Group_Reduced_Cost_Summary
 from Single_Sweep_Group_Altered_Reduced_Cost_Summary import Single_Sweep_Group_Altered_Reduced_Cost_Summary
 import Graph_Importer
+import Graph_Exporter
 import igraph as ig
-
+"""
 graph, oid_to_uri,uri_to_oid, = Graph_Importer.import_graph_regular("DBLP4")
+print "Import done"
 
 g = Single_Sweep_Group_Altered_Reduced_Cost_Summary(graph,oid_to_uri,uri_to_oid,"GroupAlteredReducedMacro.txt", "GroupAlteredReducedMicro.txt",remove_one_degree=False)
 
@@ -41,7 +43,7 @@ visual_style["bbox"] = (1000, 1000)
 ig.plot(graph, **visual_style).save("GroupAlteredReducedSummary2.png")
 
 graph, oid_to_uri,uri_to_oid, = Graph_Importer.import_graph_regular("DBLP4")
-
+print "Import Done"
 g = Single_Sweep_Group_Reduced_Cost_Summary(graph,oid_to_uri,uri_to_oid,"GroupReducedMacro.txt", "GroupReducedMicro.txt",remove_one_degree=False)
 
 layout = graph.layout("kk")
@@ -73,10 +75,11 @@ visual_style = {}
 visual_style["layout"] = layout
 visual_style["bbox"] = (1000, 1000)
 ig.plot(graph, **visual_style).save("GroupReducedSummary2.png")
-"""
+
 graph, oid_to_uri,uri_to_oid, = Graph_Importer.import_graph_regular("DBLP4")
 
-g = Altered_Reduced_Cost_Summary(graph,oid_to_uri,uri_to_oid,"AlteredMacro2.txt", "AlteredMicro2.txt",remove_one_degree=True,num_skips=10,step=0.01,initial_rc_cutoff=0.5)
+g = Altered_Reduced_Cost_Summary(graph,oid_to_uri,uri_to_oid,"AlteredMacro2.txt", "AlteredMicro2.txt",correction_both_directions=False,remove_one_degree=True,num_skips=10,step=0.01,initial_rc_cutoff=0.5)
+Graph_Exporter.export_summary(g,"DBLP4","test")
 
 layout = graph.layout("kk")
 visual_style = {}
@@ -90,6 +93,7 @@ visual_style = {}
 visual_style["layout"] = layout
 visual_style["bbox"] = (1000, 1000)
 ig.plot(graph, **visual_style).save("AlteredSummary2.png")
+
 
 
 graph, oid_to_uri,uri_to_oid, = Graph_Importer.import_graph_regular("DBLP4")
@@ -108,10 +112,10 @@ visual_style = {}
 visual_style["layout"] = layout
 visual_style["bbox"] = (1000, 1000)
 ig.plot(graph, **visual_style).save("RandomizedSummary2.png")
-
+"""
 graph, oid_to_uri,uri_to_oid, = Graph_Importer.import_graph_regular("DBLP4")
-
-g = Uniform_Dense_Summary(graph,oid_to_uri,uri_to_oid,"DenseMacro2.txt", "DenseMicro2.txt",remove_one_degree=True)
+print "Imported"
+g = Uniform_Dense_Summary(graph,oid_to_uri,uri_to_oid,"DenseMacro2.txt", "DenseMicro2.txt",remove_one_degree=False)
 
 layout = graph.layout("kk")
 visual_style = {}
@@ -126,4 +130,3 @@ visual_style["layout"] = layout
 visual_style["bbox"] = (1000, 1000)
 ig.plot(graph, **visual_style).save("DenseSummary2.png")
 
-"""

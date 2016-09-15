@@ -2,7 +2,7 @@
 import pyodbc as odbc
 import igraph as ig
 
-def import_graph_regular(dbname, cutoff=50, year_s=1990, year_e=1992):
+def import_graph_regular(dbname, cutoff=50000, year_s=1990, year_e=2010):
     cnxn = odbc.connect(r'Driver={SQL Server};Server=.\SQLEXPRESS;Database=' + dbname + r';Trusted_Connection=yes;')
     # cnxn.autoCommit = True
     cursor = cnxn.cursor()
