@@ -15,11 +15,14 @@ class Altered_Reduced_Cost_Node_Filterer(Abstract_Reduced_Cost_Based_Node_Filter
     def filter_nodes(self,supernode_name,candidate_names):
         best_merge = None
         suv_best = 0
+        best_cost_reduction = 0
         for name in candidate_names:
-            suv = self.calc_SUV(supernode_name,name)
+            suv,cost_reduction = self.calc_SUV(supernode_name,name)
             if suv > suv_best:
                 best_merge = name
                 suv_best = suv
+                best_cost_reduction =cost_reduction
+        self.cost_reduction += best_cost_reduction
         self.num_iterations += 1
         if best_merge is None or ( not self.zero_cutoff and suv_best < self.cur_cutoff):
             self.cur_skips += 1

@@ -18,20 +18,30 @@ class Single_Sweep_Group_Reduced_Cost_Node_Filterer(Abstract_Reduced_Cost_Based_
     def filter_nodes(self,supernode_name,candidate_names):
         assert supernode_name not in candidate_names
         self.make_contains_bold(supernode_name,self.graph_summary)
-        merge_reduced_costs = {c_name:self.calc_SUV(supernode_name,c_name) for c_name in candidate_names}
-        sorted_candidates = sorted((list(candidate_names)),key=lambda x: merge_reduced_costs[x])
-        sorted_candidates = filter(lambda x: merge_reduced_costs[x] > 0, sorted_candidates)
+        merge_reduced_costs = {c_name:self.calc_SUV(supernode_name,c_name)[0] for c_name in candidate_names}
+        sorted_candidates = sorted(filter(lambda x: merge_reduced_costs[x] > 0, list(candidate_names)), key=lambda y: merge_reduced_costs[y])
         curr_snode_profile = Node_Profile(supernode_name,self.graph_summary)
         to_merge = set()
+
+        cost_reduction = 0
+        first = True
 
         while len(sorted_candidates) > 0:
             candidate = sorted_candidates.pop()
             candidate_profile = Node_Profile(candidate,self.graph_summary)
-            suv = self.get_reduced_cost_from_profiles(curr_snode_profile,candidate_profile)
+            suv,c_reduction = self.get_reduced_cost_from_profiles(curr_snode_profile,candidate_profile)
+            if first and suv <= 0:
+                print "THIS SHOULDNT HAPPEN"
+            first = False
+            print "%f, %d" % (suv,c_reduction)
             if suv >= self.cutoff and suv > 0:
                 curr_snode_profile.merge_with(candidate_profile)
                 to_merge.add(candidate)
+                cost_reduction += c_reduction
+            else:
+                break
 
+        self.cost_reduction += cost_reduction
         if len(to_merge) > 1:
             self.num_skips = 0
 

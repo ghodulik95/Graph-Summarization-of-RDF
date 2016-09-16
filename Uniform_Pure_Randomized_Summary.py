@@ -6,13 +6,13 @@ from Merge_Identical_Nodes_Preprocessor import Merge_Identical_Nodes_Preprocesso
 import numpy.random as nprand
 
 class Uniform_Pure_Randomized_Summary(Abstract_Graph_Summary):
-    def __init__(self,graph,oid_to_uri,uri_to_oid,macro_filename,micro_filename, **kwargs):
+    def __init__(self, graph, oid_to_uri, uri_to_oid, macro_filename, merge_filename, **kwargs):
         """
         :type graph: ig.Graph
         :type oid_to_uri: Dictionary
         :type uri_to_oid: Dictionary
         """
-        Abstract_Graph_Summary.__init__(self,graph,oid_to_uri,uri_to_oid,macro_filename,micro_filename,log_merges=True, **kwargs)
+        Abstract_Graph_Summary.__init__(self, graph, oid_to_uri, uri_to_oid, macro_filename, merge_filename, log_merges=True, **kwargs)
 
     def on_before_summarization(self):
         self.node_selector = Uniform_Random_Node_Selector()

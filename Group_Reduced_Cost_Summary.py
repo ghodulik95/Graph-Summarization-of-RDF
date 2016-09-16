@@ -7,19 +7,19 @@ from Merge_Identical_Nodes_Preprocessor import Merge_Identical_Nodes_Preprocesso
 
 
 class Single_Sweep_Group_Reduced_Cost_Summary(Abstract_Graph_Summary):
-    def __init__(self, graph, oid_to_uri, uri_to_oid, macro_filename, micro_filename, **kwargs):
+    def __init__(self, graph, oid_to_uri, uri_to_oid, macro_filename, merge_filename, **kwargs):
         """
         :type graph: Graph
         :param graph:
         :param oid_to_uri:
         :param uri_to_oid:
         :param macro_filename:
-        :param micro_filename:
+        :param merge_filename:
         :param kwargs:
         """
         self.already_merged = set()
         self.max_merge_num = 0
-        Abstract_Graph_Summary.__init__(self, graph, oid_to_uri, uri_to_oid, macro_filename, micro_filename,log_merges=False, **kwargs)
+        Abstract_Graph_Summary.__init__(self, graph, oid_to_uri, uri_to_oid, macro_filename, merge_filename, log_merges=False, **kwargs)
 
     def on_before_summarization(self):
         self.node_selector = Uniform_Random_Node_Selector()

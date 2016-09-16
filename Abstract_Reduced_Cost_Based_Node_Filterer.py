@@ -18,8 +18,7 @@ class Abstract_Reduced_Cost_Based_Node_Filterer(Abstract_Node_Filterer):
 
         joined_cost = self.get_joined_cost(u_name,v_name)
 
-        return float(u_cost + v_cost - joined_cost) / float(u_cost + v_cost )
-        return float(u_cost + v_cost - joined_cost) / float(u_cost + v_cost )
+        return float(u_cost + v_cost - joined_cost) / float(u_cost + v_cost ), u_cost + v_cost - joined_cost
 
     def get_cost(self,supernode_name):
         super_neighbors = self.graph_summary.exact_n_hop_neighbors(supernode_name,1)
@@ -79,7 +78,7 @@ class Abstract_Reduced_Cost_Based_Node_Filterer(Abstract_Node_Filterer):
         cost_p1 = p1.cost
         cost_p2 = p2.cost
         cost_p1_p2 = self.get_joined_cost_from_profiles(p1,p2)
-        return float(cost_p1 + cost_p2 - cost_p1_p2) / (cost_p1 + cost_p2)
+        return float(cost_p1 + cost_p2 - cost_p1_p2) / (cost_p1 + cost_p2), cost_p1 + cost_p2 - cost_p1_p2
 
 class Node_Profile(object):
     def __init__(self,snode_name,graph_summary):
@@ -110,11 +109,13 @@ class Node_Profile(object):
         all_neighbors = p.neighbors.union(self.neighbors)
         for n in all_neighbors:
             self.actual_connections[n] = p.get_actual(n) + self.get_actual(n)
+            #self.potential_connections[n] = p.get_potential(n) + self.get_potential(n)
             if n in new_neighbors:
-                self.potential_connections[n] = (p.size + self.size)*(p.potential_connections[n]/p.size)
+                self.potential_connections[n] = (p.size + self.size)*(int(round(float(p.potential_connections[n])/p.size)))
             else:
-                self.potential_connections[n] = (p.size + self.size) * (self.potential_connections[n]/self.size)
-        self.neighbors.update(new_neighbors)
+                self.potential_connections[n] = (p.size + self.size) * (int(round(float(self.potential_connections[n])/self.size)))
+        self.size += p.size
+        self.neighbors = all_neighbors
 
 
     def get_actual(self,n):

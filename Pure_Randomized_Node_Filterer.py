@@ -10,13 +10,17 @@ class Pure_Randomized_Node_Fileterer(Abstract_Reduced_Cost_Based_Node_Filterer):
 
     def filter_nodes(self,supernode_name,candidate_names):
         best_merge = None
+        best_cost_reduction = 0
         suv_best = 0
 
         for name in candidate_names:
-            suv = self.calc_SUV(supernode_name,name)
+            suv,cost_reduction = self.calc_SUV(supernode_name,name)
             if suv > suv_best:
                 best_merge = name
                 suv_best = suv
+                best_cost_reduction = cost_reduction
+
+        self.cost_reduction += best_cost_reduction
 
         if best_merge is None:
             return set()

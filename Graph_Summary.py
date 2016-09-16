@@ -8,7 +8,7 @@ import math
 import time
 
 class Abstract_Graph_Summary(object):
-    def __init__(self,graph,oid_to_uri,uri_to_oid,macro_filename,micro_filename,log_merges=False,remove_one_degree=False,correction_both_directions = True, **kwargs):
+    def __init__(self, graph, oid_to_uri, uri_to_oid, macro_filename, merge_filename, iterative_filename=None, iterative_logging_factor=None, early_terminate=None, log_merges=False, remove_one_degree=False, correction_both_directions = True, **kwargs):
         """
         :type graph: ig.Graph
         :type oid_to_uri: Dictionary
@@ -27,7 +27,13 @@ class Abstract_Graph_Summary(object):
         self.oid_to_uri = oid_to_uri
         self.uri_to_oid = uri_to_oid
         self.macro = open(macro_filename,mode="w")
-        self.micro = open(micro_filename,mode="w")
+        self.micro = open(merge_filename, mode="w")
+        self.early_terminate = early_terminate
+        self.iterative = None
+        self.factor_to_log = None
+        if iterative_filename is not None:
+            self.iterative = open(iterative_filename, mode="w")
+            self.factor_to_log = iterative_logging_factor
         self.s = self.make_blank_summary()
         self.oid_to_sname = {}
         self.annotate_summary()
@@ -44,6 +50,7 @@ class Abstract_Graph_Summary(object):
         self.summarize()
         self.macro.close()
         self.micro.close()
+        self.factor_to_log.close()
 
     def expected_arguments(self):
         return set()
@@ -168,7 +175,7 @@ class Abstract_Graph_Summary(object):
         supernode = self.s.vs.find(supernode_name)
         if n == 1:
             return supernode['original_neighbors']
-        return self.exact_n_hop_original_neighbors_from_source(supernode['contains'],n)
+        return self.exact_n_hop_original_neighbors_from_source(supernode['original_neighbors'],n-1)
 
     def exact_n_hop_original_neighbors_from_source(self,input_source,n):
         source = input_source
@@ -311,14 +318,19 @@ class Abstract_Graph_Summary(object):
                 merged_name = self.merge_supernodes(to_merge,u)
             self.update_unvisited(unvisited,to_merge, merged_name)
             num_iterations += 1
-            if num_iterations % 3 == 0:
+            if self.factor_to_log is not None and num_iterations % self.factor_to_log == 0:
                 now = time.time()
                 time_elapsed = now - start
                 total_time = time_elapsed * float(initial_unvisited_size) / float(initial_unvisited_size - len(unvisited))
                 remainder = total_time - time_elapsed
                 print("Elapsed time: %d, Estimated Time Remaining: %f" % ( time_elapsed, remainder))
+                self.iterative_logging(time_elapsed,len(unvisited),initial_unvisited_size)
+            if self.early_terminate is not None:
+                time_elapsed = time.time() - start
+                if time_elapsed >= self.early_terminate:
+                    break
         self.put_edges_in_summary()
-        self.final_logging(num_iterations)
+        self.final_logging(num_iterations, 0)
         self.make_drawable()
 
     def get_num_additions(self):
@@ -355,7 +367,16 @@ class Abstract_Graph_Summary(object):
     def get_compression_ratio(self):
         original_cost = self.g.ecount()
         new_cost = self.get_summary_cost()
+        #print(str(original_cost - new_cost))
+        #print(str(self.node_filterer.cost_reduction))
+        #assert original_cost - new_cost == self.node_filterer.cost_reduction
         return float(new_cost) / float(original_cost)
+
+    def get_iterative_cost(self):
+        return self.g.ecount() - self.node_filterer.cost_reduction
+
+    def get_iterative_compression_ratio(self):
+        return float(self.get_iterative_cost()) / self.g.ecount()
 
     def initial_logging(self):
         num_edges = self.g.ecount()
@@ -363,11 +384,21 @@ class Abstract_Graph_Summary(object):
         print("----------Intial Graph----------", file=self.macro)
         print("Vertices: %d" % num_vertices, file=self.macro)
         print("Edges: %d" % num_edges,file=self.macro)
-        articulation_points = self.g.articulation_points()
-        print("Articulation Points: "+str(articulation_points),file=self.macro)
+        #articulation_points = self.g.articulation_points()
+        #print("Articulation Points: "+str(articulation_points),file=self.macro)
 
-    def final_logging(self,num_iterations):
+        if self.iterative is not None:
+            print("Time,PercentFinished,Cost,CompressionRatio",file=self.iterative)
+
+    def iterative_logging(self,time_elapsed, unvisited_size, initial_unvisited_size):
+        if self.iterative is not None:
+            print("%d,%f,%d,%f" % (time_elapsed,float(unvisited_size)/initial_unvisited_size, self.get_iterative_cost(), self.get_iterative_compression_ratio()), file=self.iterative)
+            self.iterative.flush()
+
+    def final_logging(self,num_iterations,time_elapsed):
         print("----------Summary----------",file=self.macro)
+        print("Iterations: %d" % num_iterations, file=self.macro)
+        print("Elapsed time: %d" % time_elapsed, file=self.macro)
         print("Vertices: %d" % self.s.vcount(),file=self.macro)
         print("Edges: %d" % self.get_num_edges_summary(),file=self.macro)
         print("Additions: %d" % self.get_num_additions(),file=self.macro)
@@ -375,6 +406,7 @@ class Abstract_Graph_Summary(object):
         print("Total Corrections: %d" % self.get_num_corrections(),file=self.macro)
         print("Cost: %d" % self.get_summary_cost(),file=self.macro)
         print("Compression Ratio: %f" % self.get_compression_ratio(),file=self.macro)
+        self.macro.flush()
 
 
 

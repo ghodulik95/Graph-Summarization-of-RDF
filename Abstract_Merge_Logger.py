@@ -19,7 +19,10 @@ class Abstract_Merge_Logger(object):
         headers = self.get_csv_headers()
         h = ""
         for header in headers:
-            h += header + ","
+            if isinstance(header,basestring):
+                h += header + ","
+            else:
+                h += header[0] + ","
         h = h[:-1]
         print(h,file=self.log_file)
 
