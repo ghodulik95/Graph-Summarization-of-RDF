@@ -2,6 +2,7 @@ from __future__ import print_function
 from Abstract_Merge_Logger import Abstract_Merge_Logger
 from Abstract_Reduced_Cost_Based_Node_Filterer import Abstract_Reduced_Cost_Based_Node_Filterer
 from Graph_Summary import Abstract_Graph_Summary
+from Uniform_Random_Node_Selector import Uniform_Random_Node_Selector
 import numpy
 
 
@@ -12,14 +13,17 @@ class Single_Merge_Logger(Abstract_Merge_Logger):
         :param log_file:
         :param graph_summary:
         """
+        self.file_name=log_file.name
         self.metric_combinations = self.get_metric_combinations()
         Abstract_Merge_Logger.__init__(self,log_file,graph_summary)
         self.suv_tools = Abstract_Reduced_Cost_Based_Node_Filterer(graph_summary)
-        self.node_data = {}
-        self.build_node_data()
+
 
     def get_csv_headers(self):
         headers = []
+        headers.append("Identifier")
+        headers.append("SEED NODE size")
+        headers.append("MERGE NODE size")
         for mc in self.metric_combinations:
             for nodes in mc[1]:
                 if nodes != -1:
@@ -31,6 +35,8 @@ class Single_Merge_Logger(Abstract_Merge_Logger):
                         headers.append(nodeName+metric+stat)
                 else:
                     headers.append(mc[0])
+        headers.append("Reduced Cost")
+        return headers
 
 
 
@@ -43,27 +49,53 @@ class Single_Merge_Logger(Abstract_Merge_Logger):
                 ('clustering', [0, 1], ['max', 'min', 'avg', 'median', 'deviation']),
                 ('authority', [0, 1], ['max', 'min', 'avg', 'median', 'deviation']),
                 ('hub_score', [0, 1], ['max', 'min', 'avg', 'median', 'deviation']),
-                ('eccentricity', [0, 1], ['max', 'min', 'avg', 'median', 'deviation']),
-                ('closeness', [0, 1], ['max', 'min', 'avg', 'median', 'deviation']),
+                #('eccentricity', [0, 1], ['max', 'min', 'avg', 'median', 'deviation']),
+                #'closeness', [0, 1], ['max', 'min', 'avg', 'median', 'deviation']),
                 ('shared',[-1])]
 
     def build_node_data(self):
         all_node_ids = range(0,self.graph_summary.g.vcount())
+        print(self.graph_summary.g.vcount())
+        print(self.file_name+" "+"start")
         self.node_data['degrees'] = [v.degree() for v in self.graph_summary.g.vs]
-        self.node_data['num2hop'] = [len(self.graph_summary.exact_n_hop_original_neighbors_from_oid(v.index,2)) for v in self.graph_summary.g.vs ]
-        self.node_data['deg2hopRatio'] = [float(self.node_data['num2hop'][i]) / self.node_data['degrees'][i] for i in all_node_ids]
+        print(self.file_name+" "+"degrees done")
         articulation_points = set(self.graph_summary.g.articulation_points())
-        articulation_proximities = [self.find_distance_to_articulation(i,articulation_points) for i in all_node_ids]
-        self.node_data['articulation_proximity'] = [a[1] for a in articulation_proximities]
-        self.node_data['articulation_nearest'] = [a[0] for a in articulation_proximities]
-        self.node_data['clustering'] = self.graph_summary.g.transitivity_local_undirected(vertices=all_node_ids)
+        print(self.file_name+" "+"articulation points found")
+        self.node_data['num2hop'] = []
+        self.node_data['deg2hopRatio'] = []
+        self.node_data['articulation_proximity'] = []
+        self.node_data['articulation_nearest'] = []
+        for v in all_node_ids:
+            neighbors = set(self.graph_summary.g.neighbors(v))
+            two_hop = self.graph_summary.exact_n_hop_original_neighbors_from_oid(v,2)
+            self.node_data['num2hop'].append(len(two_hop))
+            if self.node_data['degrees'][v] > 0:
+                self.node_data['deg2hopRatio'].append( float(self.node_data['num2hop'][v]) / self.node_data['degrees'][v])
+            else:
+                self.node_data['deg2hopRatio'][v].append( -1)
+            art_proximitiy, art_closest = self.find_distance_to_articulation(v,neighbors,two_hop,articulation_points)
+            self.node_data['articulation_proximity'].append(art_proximitiy)
+            self.node_data['articulation_nearest'].append(art_closest)
+            #print(v)
+        print(self.file_name+" "+"num2hop done")
+        print(self.file_name+" "+"deg2hop ratio done")
+        print(self.file_name+" "+"articulation done")
+        self.node_data['clustering'] = self.graph_summary.g.transitivity_local_undirected()
+        print(self.file_name+" "+"clustering done")
         self.node_data['authority'] = self.graph_summary.g.authority_score()
+        print(self.file_name+" "+"Auth score done")
         self.node_data['hub_score'] = self.graph_summary.g.hub_score()
-        self.node_data['eccentricity'] = self.graph_summary.g.eccentricity(vertices=all_node_ids)
-        self.node_data['closeness'] = self.graph_summary.g.closeness(vertices=all_node_ids)
+        print(self.file_name+" "+"hub score done")
+        #self.node_data['eccentricity'] = self.graph_summary.g.eccentricity()
+        #print("Eccentricity done")
+        #self.node_data['closeness'] = self.graph_summary.g.closeness()
+        #print("Closeness done")
+        print(self.file_name+" "+"All done")
 
     def get_snode_metric(self,contains,metric,stats):
-        metrics = [self.node_data[metric][i] for i in contains]
+        #print(self.node_data[metric])
+        #print(self.node_data[metric][0])
+        metrics = [self.node_data[metric][int(i)] for i in contains]
         to_return = {}
         if 'max' in stats:
             to_return['max'] = max(metrics)
@@ -79,54 +111,76 @@ class Single_Merge_Logger(Abstract_Merge_Logger):
             to_return['as-is'] = metrics[0]
         return to_return
 
-    def find_distance_to_articulation(self,index,points):
-        q = [(index,0)]
-        seen = set()
-        while(len(q) > 0):
-            current,distance = q.pop()
-            if current in points:
-                return (current,distance)
-            seen.add(current)
-            neighbors = self.graph_summary.g.neighbors(current)
-            for n in neighbors:
-                if n not in seen:
-                    q.insert(0,(n,distance + 1))
-        return (None,-1)
+    def find_distance_to_articulation(self,v,neighbors,two_hop,articulation_points):
+        if v in articulation_points:
+            return 0
+        n_intersect = neighbors.intersection(articulation_points)
+        if len(n_intersect) > 0:
+            return 1,n_intersect.pop()
+        two_intersect = two_hop.intersection(articulation_points)
+        if len(two_intersect) > 0:
+            return 2,two_intersect.pop()
+        return -1, None
 
-
-    def log_merge(self,u,nodes):
+    def log_merge(self,u,nodes,identifier="",reduced_cost=None):
         """
         :param u:
         :param snodes:
         :type: snodes: set
         :return:
         """
-
+        #print(nodes)
         assert len(nodes) == 1
+
+
+
         merge_node = None
         for x in nodes:
             merge_node = x
         u_snode_obj = self.graph_summary.s.vs.find(u)
         merge_node_obj = self.graph_summary.s.vs.find(merge_node)
-        new_contains = u_snode_obj['contains'].union(merge_node_obj['contains'])
+        row = str(identifier)+","+str(len(u_snode_obj['contains']))+","+str(len(merge_node_obj['contains']))+","
+        for mc in self.metric_combinations:
+            metric = mc[0]
+            for nodes in mc[1]:
+                if nodes > -1:
+                    stats = None
+                    if nodes == 0:
+                        stats = self.get_snode_metric(u_snode_obj['contains'],metric,mc[2])
+                    elif nodes == 1:
+                        stats =  self.get_snode_metric(merge_node_obj['contains'],metric,mc[2])
+                    for stat in mc[2]:
+                        row += str(stats[stat])+","
+                elif nodes == -1:
+                    seed_neighbors = self.graph_summary.exact_n_hop_original_neighbors_from_supernode_name(u,1)
+                    #num_seed_neighbors = len(seed_neighbors)
+                    merge_neighbors = self.graph_summary.exact_n_hop_original_neighbors_from_supernode_name(merge_node,1)
+                    #num_merge_neighbors = len(merge_neighbors)
+                    num_shared_neighbors = len(seed_neighbors.intersection(merge_neighbors))
+                    num_total_neighbors = len(seed_neighbors.union(merge_neighbors))
+                    row += str(float(num_shared_neighbors)/num_total_neighbors)+","
+        if reduced_cost is None:
+            reduced_cost=self.suv_tools.calc_SUV(u,merge_node)[0]
+        row += str(reduced_cost)
+        print(row,file=self.log_file)
+        self.log_file.flush()
 
-        seed_neighbors = self.graph_summary.exact_n_hop_original_neighbors_from_supernode_name(u,1)
-        num_seed_neighbors = len(seed_neighbors)
-        merge_neighbors = self.graph_summary.exact_n_hop_original_neighbors_from_supernode_name(merge_node,1)
-        num_merge_neighbors = len(merge_neighbors)
-        num_shared_neighbors = len(seed_neighbors.union(merge_neighbors))
-        num_not_shared = num_seed_neighbors + num_merge_neighbors - num_shared_neighbors
+    def log_state_sample(self,identifier,unvisited):
+        ns = Uniform_Random_Node_Selector()
+        numTried = 0
+        while numTried < 100 and len(unvisited) > 0:
+            seed = ns.select_node(unvisited)
+            candidates = list(self.graph_summary.get_merge_candidates(seed))
+            reduced_costs = {n:self.suv_tools.calc_SUV(seed,n)[0] for n in candidates}
+            best = max(reduced_costs, key=lambda x: reduced_costs[x])
+            #print(best)
+            self.log_merge(seed,set([best]),identifier=identifier,reduced_cost=reduced_costs[best])
 
-        num_seed_2hop = len(self.graph_summary.exact_n_hop_original_neighbors_from_supernode_name(u,2))
-        num_merge_2hop = len(self.graph_summary.exact_n_hop_original_neighbors_from_supernode_name(merge_node,2))
+            unvisited.remove(seed)
+            numTried += 1
 
-        suv = self.suv_tools.calc_SUV(u,merge_node)
-        centralities_seed = self.graph_summary.g.betweenness(vertices=u_snode_obj['contains'],directed=False)
-        centralities_seed_min,centralities_seed_avg,centralities_seed_max = self.get_max_avg_min(centralities_seed)
-        centralities_merge = self.graph_summary.g.betweenness(vertices=merge_node_obj['contains'], directed=False)
-        centralities_merge_min, centralities_merge_avg, centralities_merge_max = self.get_max_avg_min(centralities_merge)
-        line = ','.join([u,merge_node,str(new_contains),str(num_seed_neighbors),str(num_seed_2hop),str(num_merge_neighbors),str(num_merge_2hop),str(num_shared_neighbors),str(num_not_shared),str(centralities_seed_min),str(centralities_seed_avg),str(centralities_seed_max),str(centralities_merge_min),str(centralities_merge_avg),str(centralities_merge_max),str(suv)])
-        print(line,file=self.log_file)
+
+
 
     def get_max_avg_min(self,nums):
         return min(nums),float(sum(nums))/len(nums),max(nums)

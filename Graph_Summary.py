@@ -8,7 +8,7 @@ import math
 import time
 
 class Abstract_Graph_Summary(object):
-    def __init__(self, graph, oid_to_uri, uri_to_oid, macro_filename, merge_filename, iterative_filename=None, iterative_logging_factor=None, early_terminate=None, log_merges=False, remove_one_degree=False, correction_both_directions = True, **kwargs):
+    def __init__(self, graph, oid_to_uri, uri_to_oid, macro_filename, merge_filename, iterative_filename=None, iterative_logging_factor=None, early_terminate=None, log_merges=False, remove_one_degree=False, correction_both_directions = True, putEdges=True, **kwargs):
         """
         :type graph: ig.Graph
         :type oid_to_uri: Dictionary
@@ -26,6 +26,7 @@ class Abstract_Graph_Summary(object):
         self.annotate_original()
         self.oid_to_uri = oid_to_uri
         self.uri_to_oid = uri_to_oid
+        self.macro_filename = macro_filename
         self.macro = open(macro_filename,mode="w")
         self.micro = open(merge_filename, mode="w")
         self.early_terminate = early_terminate
@@ -37,6 +38,7 @@ class Abstract_Graph_Summary(object):
         self.s = self.make_blank_summary()
         self.oid_to_sname = {}
         self.annotate_summary()
+        self.putEdges = putEdges
 
         self.additions={}
         self.subtractions={}
@@ -50,7 +52,7 @@ class Abstract_Graph_Summary(object):
         self.summarize()
         self.macro.close()
         self.micro.close()
-        self.factor_to_log.close()
+        self.iterative.close()
 
     def expected_arguments(self):
         return set()
@@ -111,7 +113,7 @@ class Abstract_Graph_Summary(object):
         :return:
         """
         assert len(snodes) > 1
-        if self.log_merges:
+        if self.log_merges and False:
             copy_snodes = snodes.copy()
             if u in copy_snodes:
                 copy_snodes.remove(u)
@@ -318,20 +320,24 @@ class Abstract_Graph_Summary(object):
                 merged_name = self.merge_supernodes(to_merge,u)
             self.update_unvisited(unvisited,to_merge, merged_name)
             num_iterations += 1
+            if num_iterations < 100:
+                print(num_iterations)
             if self.factor_to_log is not None and num_iterations % self.factor_to_log == 0:
                 now = time.time()
                 time_elapsed = now - start
                 total_time = time_elapsed * float(initial_unvisited_size) / float(initial_unvisited_size - len(unvisited))
                 remainder = total_time - time_elapsed
-                print("Elapsed time: %d, Estimated Time Remaining: %f" % ( time_elapsed, remainder))
-                self.iterative_logging(time_elapsed,len(unvisited),initial_unvisited_size)
+                print(self.macro_filename+" "+"Elapsed time: %d, Estimated Time Remaining: %f" % ( time_elapsed, remainder))
+                self.iterative_logging(time_elapsed,len(unvisited),initial_unvisited_size,unvisited)
             if self.early_terminate is not None:
                 time_elapsed = time.time() - start
                 if time_elapsed >= self.early_terminate:
+                    print(self.macro_filename+" "+"Terminating early")
                     break
-        self.put_edges_in_summary()
-        self.final_logging(num_iterations, 0)
-        self.make_drawable()
+        if self.putEdges:
+            self.put_edges_in_summary()
+            self.final_logging(num_iterations, 0)
+            self.make_drawable()
 
     def get_num_additions(self):
         #Corrections are in pairs to be easily queryable
@@ -390,10 +396,13 @@ class Abstract_Graph_Summary(object):
         if self.iterative is not None:
             print("Time,PercentFinished,Cost,CompressionRatio",file=self.iterative)
 
-    def iterative_logging(self,time_elapsed, unvisited_size, initial_unvisited_size):
+    def iterative_logging(self,time_elapsed, unvisited_size, initial_unvisited_size,unvisited):
         if self.iterative is not None:
             print("%d,%f,%d,%f" % (time_elapsed,float(unvisited_size)/initial_unvisited_size, self.get_iterative_cost(), self.get_iterative_compression_ratio()), file=self.iterative)
             self.iterative.flush()
+        if self.log_merges:
+            self.merge_logger.log_state_sample(time_elapsed,unvisited.copy())
+
 
     def final_logging(self,num_iterations,time_elapsed):
         print("----------Summary----------",file=self.macro)

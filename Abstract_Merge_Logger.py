@@ -10,7 +10,8 @@ class Abstract_Merge_Logger(object):
         self.log_file = log_file
         self.graph_summary=graph_summary
         self.log_csv_headers()
-        self.oid_node_info = self.build_node_data()
+        self.node_data = {}
+        self.build_node_data()
 
     def build_node_data(self):
         return None
@@ -27,6 +28,9 @@ class Abstract_Merge_Logger(object):
         print(h,file=self.log_file)
 
     def get_csv_headers(self):
+        raise NotImplementedError()
+
+    def log_state_sample(self):
         raise NotImplementedError()
 
     def log_merge(self,u,nodes):

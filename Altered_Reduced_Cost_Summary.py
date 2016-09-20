@@ -6,7 +6,7 @@ from Merge_Identical_Nodes_Preprocessor import Merge_Identical_Nodes_Preprocesso
 
 class Altered_Reduced_Cost_Summary(Abstract_Graph_Summary):
     def __init__(self, graph, oid_to_uri, uri_to_oid, macro_filename, merge_filename, **kwargs):
-        Abstract_Graph_Summary.__init__(self, graph, oid_to_uri, uri_to_oid, macro_filename, merge_filename, log_merges=True, **kwargs)
+        Abstract_Graph_Summary.__init__(self, graph, oid_to_uri, uri_to_oid, macro_filename, merge_filename, **kwargs)
 
     def expected_arguments(self):
         return {"initial_rc_cutoff","num_skips","step"}

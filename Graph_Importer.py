@@ -2,11 +2,11 @@
 import pyodbc as odbc
 import igraph as ig
 
-def import_graph_regular(dbname, cutoff=50000, year_s=1990, year_e=2010):
+def import_graph_regular(dbname, cutoff=500, year_s=1990, year_e=1993):
     cnxn = odbc.connect(r'Driver={SQL Server};Server=.\SQLEXPRESS;Database=' + dbname + r';Trusted_Connection=yes;')
     # cnxn.autoCommit = True
     cursor = cnxn.cursor()
-    if dbname == "DBLP4":
+    if dbname == "DBLP4" and False:
         year_start = year_s
         year_end = year_e
         lim_num_docs = cutoff
@@ -15,7 +15,7 @@ def import_graph_regular(dbname, cutoff=50000, year_s=1990, year_e=2010):
         cursor.execute(q)
     else:
         cursor.execute(
-            """SELECT * FROM RDF WHERE [Object] NOT LIKE '%"%' AND [Object] LIKE '%[^0-9]%' AND [Object] NOT LIKE '%Disease_Annotation>%'""")
+            """SELECT * FROM RDF WHERE [Object] NOT LIKE '%"%' AND [Object] LIKE '%[^0-9]%' AND [Subject] NOT LIKE '%"%' AND [Subject] LIKE '%[^0-9]%' AND [Object] NOT LIKE '%Disease_Annotation>%'""")
 
     node_name_to_id = {}
     id_to_node_name = {}
@@ -44,7 +44,7 @@ def import_graph_regular(dbname, cutoff=50000, year_s=1990, year_e=2010):
             id_to_node_name[max_node_id] = object_name
         edges.add((node_name_to_id[subject_name], node_name_to_id[object_name]))
         count += 1
-        if dbname != "DBLP4" and count >= cutoff:
+        if dbname != "DBLP4" and count >= cutoff and False:
             break
 
     cnxn.close()
