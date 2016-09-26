@@ -113,7 +113,7 @@ class Single_Merge_Logger(Abstract_Merge_Logger):
 
     def find_distance_to_articulation(self,v,neighbors,two_hop,articulation_points):
         if v in articulation_points:
-            return 0
+            return 0,v
         n_intersect = neighbors.intersection(articulation_points)
         if len(n_intersect) > 0:
             return 1,n_intersect.pop()
