@@ -2,7 +2,7 @@
 import pyodbc as odbc
 import igraph as ig
 
-def import_graph_regular(dbname, cutoff=500, year_s=1990, year_e=1993):
+def import_graph_regular(dbname, cutoff=50, year_s=1990, year_e=1992,include_real_name=False):
     cnxn = odbc.connect(r'Driver={SQL Server};Server=.\SQLEXPRESS;Database=' + dbname + r';Trusted_Connection=yes;')
     # cnxn.autoCommit = True
     cursor = cnxn.cursor()
@@ -15,7 +15,13 @@ def import_graph_regular(dbname, cutoff=500, year_s=1990, year_e=1993):
         cursor.execute(q)
     else:
         cursor.execute(
-            """SELECT * FROM RDF WHERE [Object] NOT LIKE '%"%' AND [Object] LIKE '%[^0-9]%' AND [Subject] NOT LIKE '%"%' AND [Subject] LIKE '%[^0-9]%' AND [Object] NOT LIKE '%Disease_Annotation>%'""")
+            """SELECT * FROM RDF WHERE [Object] NOT LIKE '%"%' AND [Object] LIKE '%[^0-9]%' AND [Subject] NOT LIKE '%"%' AND [Subject] LIKE '%[^0-9]%' AND [Object] NOT LIKE '%Disease_Annotation>%'
+                AND [Object] NOT IN (SELECT TOP 12 [Object]
+                                          FROM [dbo].[RDF]
+                                          GROUP BY [Object]
+                                          HAVING COUNT(*) >= 100
+                                          ORDER BY COUNT(*) DESC)
+            """)
 
     node_name_to_id = {}
     id_to_node_name = {}
@@ -51,6 +57,8 @@ def import_graph_regular(dbname, cutoff=500, year_s=1990, year_e=1993):
 
     g = ig.Graph(directed=False)
     g.add_vertices(max_node_id + 1)
+    if include_real_name:
+        g.vs['name'] = [id_to_node_name[id] for id in range(max_node_id + 1)]
     g.add_edges(edges)
 
     return g, id_to_node_name, node_name_to_id
