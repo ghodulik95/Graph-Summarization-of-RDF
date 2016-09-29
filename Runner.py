@@ -1,12 +1,36 @@
-from Uniform_Dense_Summary import Uniform_Dense_Summary
-from Uniform_Pure_Randomized_Summary import Uniform_Pure_Randomized_Summary
-from Altered_Reduced_Cost_Summary import Altered_Reduced_Cost_Summary
-from Group_Reduced_Cost_Summary import Single_Sweep_Group_Reduced_Cost_Summary
-from Single_Sweep_Group_Altered_Reduced_Cost_Summary import Single_Sweep_Group_Altered_Reduced_Cost_Summary
+#from Uniform_Dense_Summary import Uniform_Dense_Summary
+#from Uniform_Pure_Randomized_Summary import Uniform_Pure_Randomized_Summary
+#from Altered_Reduced_Cost_Summary import Altered_Reduced_Cost_Summary
+#from Group_Reduced_Cost_Summary import Single_Sweep_Group_Reduced_Cost_Summary
+#from Single_Sweep_Group_Altered_Reduced_Cost_Summary import Single_Sweep_Group_Altered_Reduced_Cost_Summary
+from GroupUniformRandomCustom import GroupUniformRandomCustom
+from AlteredReducedCostCustomSummary import AlteredReducedCostCustomSummary
 import Graph_Importer
 import Graph_Exporter
 import igraph as ig
+from UniformRandomCustom import UniformRandomCustom
+
+graph, oid_to_uri,uri_to_oid, = Graph_Importer.import_graph_regular("DBLP4",include_real_name=True)
+print "Import done"
+
+g = AlteredReducedCostCustomSummary(graph,oid_to_uri,uri_to_oid,"DBLP4","AlteredCustomTestMacro.txt","AlteredCustomMerge.csv","AlteredCustomIterative.csv",5,0.5,10,0.01)
+
+Graph_Exporter.export_summary(g,"DBLP4","AlteredCustom")
+
+layout = graph.layout("kk")
+visual_style = {}
+visual_style["layout"] = layout
+visual_style["bbox"] = (1000, 1000)
+ig.plot(graph, **visual_style).save("AlteredCustomTestOriginal.png")
+
+graph = g.s
+layout = graph.layout("kk")
+visual_style = {}
+visual_style["layout"] = layout
+visual_style["bbox"] = (1000, 1000)
+ig.plot(graph, **visual_style).save("AlteredCustomTestSummary.png")
 """
+
 graph, oid_to_uri,uri_to_oid, = Graph_Importer.import_graph_regular("DBLP4")
 print "Import done"
 
@@ -98,6 +122,23 @@ ig.plot(graph, **visual_style).save("AlteredSummary2.png")
 
 graph, oid_to_uri,uri_to_oid, = Graph_Importer.import_graph_regular("DBLP4")
 
+g = Uniform_Pure_Randomized_Summary(graph,oid_to_uri,uri_to_oid,"RandomizedMacro.txt", "RandomizedMicro.csv",iterative_filename="RandomizedIterative.csv",iterative_logging_factor=10,remove_one_degree=False,early_terminate=60)
+
+layout = graph.layout("kk")
+visual_style = {}
+visual_style["layout"] = layout
+visual_style["bbox"] = (1000, 1000)
+ig.plot(graph, **visual_style).save("RandomizedOriginal1.png")
+
+graph = g.s
+layout = graph.layout("kk")
+visual_style = {}
+visual_style["layout"] = layout
+visual_style["bbox"] = (1000, 1000)
+ig.plot(graph, **visual_style).save("RandomizedSummary1.png")
+
+graph, oid_to_uri,uri_to_oid, = Graph_Importer.import_graph_regular("DBLP4")
+
 g = Uniform_Pure_Randomized_Summary(graph,oid_to_uri,uri_to_oid,"RandomizedMacro2.txt", "RandomizedMicro2.txt",remove_one_degree=True)
 
 layout = graph.layout("kk")
@@ -112,7 +153,7 @@ visual_style = {}
 visual_style["layout"] = layout
 visual_style["bbox"] = (1000, 1000)
 ig.plot(graph, **visual_style).save("RandomizedSummary2.png")
-"""
+
 graph, oid_to_uri,uri_to_oid, = Graph_Importer.import_graph_regular("DBLP4")
 print "Imported"
 g = Uniform_Dense_Summary(graph,oid_to_uri,uri_to_oid,"DenseMacro2.txt", "DenseMicro2.txt",remove_one_degree=False)
@@ -130,3 +171,4 @@ visual_style["layout"] = layout
 visual_style["bbox"] = (1000, 1000)
 ig.plot(graph, **visual_style).save("DenseSummary2.png")
 
+"""

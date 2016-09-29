@@ -4,8 +4,8 @@ from CustomGraph import Node_Profile as NP
 import random
 
 class UniformRandomCustom(AbstractCustomGraphSummary):
-    def __init__(self, g,uri_to_oid,dbname):
-        AbstractCustomGraphSummary.__init__(self,g,uri_to_oid,dbname)
+    def __init__(self,g,oid_to_uri,uri_to_oid,dbname,macro_filename,merge_log_filename,iterative_log_filename,log_factor):
+        AbstractCustomGraphSummary.__init__(self,g,oid_to_uri,uri_to_oid,dbname,macro_filename,merge_log_filename,iterative_log_filename,log_factor)
 
     def generate_original_unvisited(self):
         return self.super_nodes.copy()
@@ -19,13 +19,16 @@ class UniformRandomCustom(AbstractCustomGraphSummary):
     def filter_merge_candidates(self, u, merge_candidates):
         best_suv = 0
         best_node = None
+        best_cost_reduction = 0
         for mc in merge_candidates:
-            suv = u.calc_SUV(mc)
+            suv,cost_reduction = u.calc_SUV(mc)
             if suv > best_suv:
                 best_suv = suv
                 best_node = mc
+                best_cost_reduction = cost_reduction
             if best_suv > 0.45:
                 break
+        self.cost_reduction += best_cost_reduction
         return best_node
 
     def merge_supernodes(self, to_merge,u):

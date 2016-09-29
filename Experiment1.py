@@ -7,7 +7,7 @@ import os
 from multiprocessing import Process,Pool
 
 
-def run_experiment_1(num):
+def run_experiment_1(num,appendage=""):
     if num <= 4:
         graph, oid_to_uri,uri_to_oid, = Graph_Importer.import_graph_regular("wordnet")
         logging.basicConfig(filename="Wordnet.log",level=logging.INFO)
@@ -22,7 +22,7 @@ def run_experiment_1(num):
     try:
 
         if num == 1:
-            prefix = os.path.join(script_dir,"Experiment1/UniformWordnetInclude1Degree")
+            prefix = os.path.join(script_dir,"Experiment1/UniformWordnetInclude1Degree"+appendage)
 
             summary = Uniform_Pure_Randomized_Summary(graph,oid_to_uri,uri_to_oid,
                                                       macro_filename=prefix+"Macro.txt",
@@ -36,7 +36,7 @@ def run_experiment_1(num):
                                                       putEdges=False
                 )
         if num == 2:
-            prefix = os.path.join(script_dir,"Experiment1/UniformWordnetNotInclude1Degree")
+            prefix = os.path.join(script_dir,"Experiment1/UniformWordnetNotInclude1Degree"+appendage)
             summary = Uniform_Pure_Randomized_Summary(graph,oid_to_uri,uri_to_oid,
                                                       macro_filename=prefix+"Macro.txt",
                                                       merge_filename=prefix+"Merge.csv",
@@ -49,7 +49,7 @@ def run_experiment_1(num):
                                                       putEdges=False
                 )
         if num == 3:
-            prefix = os.path.join(script_dir,"Experiment1/AlteredWordnetNotInclude1Degree")
+            prefix = os.path.join(script_dir,"Experiment1/AlteredWordnetNotInclude1Degree"+appendage)
             summary = Altered_Reduced_Cost_Summary(graph,oid_to_uri,uri_to_oid,
                                                       macro_filename=prefix+"Macro.txt",
                                                       merge_filename=prefix+"Merge.csv",
@@ -65,7 +65,7 @@ def run_experiment_1(num):
                                                       step=0.1,
                 )
         if num == 4:
-            prefix = os.path.join(script_dir,"Experiment1/AlteredWordnetInclude1Degree")
+            prefix = os.path.join(script_dir,"Experiment1/AlteredWordnetInclude1Degree"+appendage)
             summary = Altered_Reduced_Cost_Summary(graph,oid_to_uri,uri_to_oid,
                                                       macro_filename=prefix+"Macro.txt",
                                                       merge_filename=prefix+"Merge.csv",
@@ -82,7 +82,7 @@ def run_experiment_1(num):
                 )
 
         if num == 5:
-            prefix = os.path.join(script_dir, "Experiment1/UniformDBLP4Include1Degree")
+            prefix = os.path.join(script_dir, "Experiment1/UniformDBLP4Include1Degree"+appendage)
 
             summary = Uniform_Pure_Randomized_Summary(graph, oid_to_uri, uri_to_oid,
                                                       macro_filename=prefix + "Macro.txt",
@@ -96,7 +96,7 @@ def run_experiment_1(num):
                                                       putEdges=False
                                                       )
         if num == 6:
-            prefix = os.path.join(script_dir, "Experiment1/UniformDBLP4NotInclude1Degree")
+            prefix = os.path.join(script_dir, "Experiment1/UniformDBLP4NotInclude1Degree"+appendage)
             summary = Uniform_Pure_Randomized_Summary(graph, oid_to_uri, uri_to_oid,
                                                       macro_filename=prefix + "Macro.txt",
                                                       merge_filename=prefix + "Merge.csv",
@@ -109,7 +109,7 @@ def run_experiment_1(num):
                                                       putEdges=False
                                                       )
         if num == 7:
-            prefix = os.path.join(script_dir, "Experiment1/AlteredDBLP4NotInclude1Degree")
+            prefix = os.path.join(script_dir, "Experiment1/AlteredDBLP4NotInclude1Degree"+appendage)
             summary = Altered_Reduced_Cost_Summary(graph, oid_to_uri, uri_to_oid,
                                                    macro_filename=prefix + "Macro.txt",
                                                    merge_filename=prefix + "Merge.csv",
@@ -125,7 +125,7 @@ def run_experiment_1(num):
                                                    step=0.1,
                                                    )
         if num == 8:
-            prefix = os.path.join(script_dir, "Experiment1/AlteredDBLP4Include1Degree")
+            prefix = os.path.join(script_dir, "Experiment1/AlteredDBLP4Include1Degree"+appendage)
             summary = Altered_Reduced_Cost_Summary(graph, oid_to_uri, uri_to_oid,
                                                    macro_filename=prefix + "Macro.txt",
                                                    merge_filename=prefix + "Merge.csv",
@@ -140,8 +140,22 @@ def run_experiment_1(num):
                                                    num_skips=100,
                                                    step=0.1
                                                    )
+        if num == 9:
+            prefix = os.path.join(script_dir, "Experiment1/UniformWordnetInclude1Degree" + appendage)
+
+            summary = Uniform_Pure_Randomized_Summary(graph, oid_to_uri, uri_to_oid,
+                                                      macro_filename=prefix + "Macro.txt",
+                                                      merge_filename=prefix + "Merge.csv",
+                                                      iterative_filename=prefix + "Iterative.csv",
+                                                      iterative_logging_factor=1000,
+                                                      early_terminate=terminate,
+                                                      log_merges=True,
+                                                      remove_one_degree=False,
+                                                      correction_both_directions=False,
+                                                      putEdges=False
+                                                      )
     except Exception as e:
-        message = prefix+" Failed: "+e.message
+        message = prefix+" Failed: "#+e.message
         logging.error(message)
         sendMessage(message)
 
@@ -152,8 +166,9 @@ def run_experiment_1(num):
 
 
 if __name__ == '__main__':
-    p = Pool(processes=4)
-    p.map(run_experiment_1,range(1,9))
+    #p = Pool(processes=4)
+    #p.map(run_experiment_1,range(5,9))
+    run_experiment_1(1,"NoHighDegreeTest")
 
 """
 for i in range(2):

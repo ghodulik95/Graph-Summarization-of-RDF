@@ -2,11 +2,11 @@
 import pyodbc as odbc
 import igraph as ig
 
-def import_graph_regular(dbname, cutoff=50, year_s=1990, year_e=1992,include_real_name=False):
+def import_graph_regular(dbname, cutoff=50, year_s=1990, year_e=1992,include_real_name=False,fulldb=False):
     cnxn = odbc.connect(r'Driver={SQL Server};Server=.\SQLEXPRESS;Database=' + dbname + r';Trusted_Connection=yes;')
     # cnxn.autoCommit = True
     cursor = cnxn.cursor()
-    if dbname == "DBLP4" and False:
+    if dbname == "DBLP4" and not fulldb:
         year_start = year_s
         year_end = year_e
         lim_num_docs = cutoff
@@ -15,12 +15,8 @@ def import_graph_regular(dbname, cutoff=50, year_s=1990, year_e=1992,include_rea
         cursor.execute(q)
     else:
         cursor.execute(
-            """SELECT * FROM RDF WHERE [Object] NOT LIKE '%"%' AND [Object] LIKE '%[^0-9]%' AND [Subject] NOT LIKE '%"%' AND [Subject] LIKE '%[^0-9]%' AND [Object] NOT LIKE '%Disease_Annotation>%'
-                AND [Object] NOT IN (SELECT TOP 12 [Object]
-                                          FROM [dbo].[RDF]
-                                          GROUP BY [Object]
-                                          HAVING COUNT(*) >= 100
-                                          ORDER BY COUNT(*) DESC)
+            """SELECT * FROM RDF WHERE [Object] NOT LIKE '%"%' AND [Object] NOT LIKE '%#%' AND [Object] LIKE '%<%' AND [Predicate] NOT LIKE '%#type%'
+                AND [Object] LIKE '%[^0-9]%' AND [Subject] NOT LIKE '%"%' AND [Subject] LIKE '%[^0-9]%' AND [Object] NOT LIKE '%Disease_Annotation>%'
             """)
 
     node_name_to_id = {}
@@ -50,7 +46,7 @@ def import_graph_regular(dbname, cutoff=50, year_s=1990, year_e=1992,include_rea
             id_to_node_name[max_node_id] = object_name
         edges.add((node_name_to_id[subject_name], node_name_to_id[object_name]))
         count += 1
-        if dbname != "DBLP4" and count >= cutoff and False:
+        if dbname != "DBLP4" and count >= cutoff and not fulldb:
             break
 
     cnxn.close()
