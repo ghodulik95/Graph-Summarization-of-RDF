@@ -4,8 +4,8 @@ from CustomGraph import Node_Profile as NP
 import random
 
 class UniformRandomCustom(AbstractCustomGraphSummary):
-    def __init__(self,g,oid_to_uri,uri_to_oid,dbname,macro_filename,merge_log_filename,iterative_log_filename,log_factor):
-        AbstractCustomGraphSummary.__init__(self,g,oid_to_uri,uri_to_oid,dbname,macro_filename,merge_log_filename,iterative_log_filename,log_factor)
+    def __init__(self,g,oid_to_uri,uri_to_oid,dbname,macro_filename,merge_log_filename,iterative_log_filename,log_factor,dbSerializationName):
+        AbstractCustomGraphSummary.__init__(self,g,oid_to_uri,uri_to_oid,dbname,macro_filename,merge_log_filename,iterative_log_filename,log_factor,dbSerializationName)
 
     def generate_original_unvisited(self):
         return self.super_nodes.copy()
@@ -39,6 +39,7 @@ class UniformRandomCustom(AbstractCustomGraphSummary):
             return None
 
     def update_unvisited(self, unvisited, to_merge, u, merged_node):
+        print unvisited
         unvisited.remove(u)
         if to_merge is not None:
             unvisited.remove(to_merge)

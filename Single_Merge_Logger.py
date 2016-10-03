@@ -201,7 +201,7 @@ class Single_Merge_Logger(Abstract_Merge_Logger):
         else:
             return node['contains']
 
-    def log_state_sample(self,identifier,unvisited,numToTry=100,uri_to_oid=None):
+    def log_state_sample(self,identifier,unvisited,numToTry=100):
         ns = Uniform_Random_Node_Selector()
         numTried = 0
         while numTried < numToTry and len(unvisited) > 0:

@@ -401,7 +401,7 @@ class Abstract_Graph_Summary(object):
             print("%d,%f,%d,%f" % (time_elapsed,float(unvisited_size)/initial_unvisited_size, self.get_iterative_cost(), self.get_iterative_compression_ratio()), file=self.iterative)
             self.iterative.flush()
         if self.log_merges:
-            self.merge_logger.log_state_sample(time_elapsed,unvisited.copy())
+            self.merge_logger.log_state_sample(time_elapsed, unvisited.copy())
 
 
     def final_logging(self,num_iterations,time_elapsed):

@@ -13,7 +13,7 @@ from UniformRandomCustom import UniformRandomCustom
 graph, oid_to_uri,uri_to_oid, = Graph_Importer.import_graph_regular("DBLP4",include_real_name=True)
 print "Import done"
 
-g = AlteredReducedCostCustomSummary(graph,oid_to_uri,uri_to_oid,"DBLP4","AlteredCustomTestMacro.txt","AlteredCustomMerge.csv","AlteredCustomIterative.csv",5,0.5,10,0.01)
+g = UniformRandomCustom(graph,oid_to_uri,uri_to_oid,"DBLP4","AlteredCustomTestMacro.txt","AlteredCustomMerge.csv","AlteredCustomIterative.csv",0.05,"DBLP4Small")
 
 Graph_Exporter.export_summary(g,"DBLP4","AlteredCustom")
 

@@ -5,7 +5,7 @@ import random
 
 
 class AlteredReducedCostCustomSummary(AbstractCustomGraphSummary):
-    def __init__(self, g, oid_to_uri, uri_to_oid, dbname, macro_filename, merge_log_filename, iterative_log_filename,log_factor,initial_rc_cutoff,num_allowable_skips,step):
+    def __init__(self, g, oid_to_uri, uri_to_oid, dbname, macro_filename, merge_log_filename, iterative_log_filename,log_factor,initial_rc_cutoff,num_allowable_skips,step,dbSerializationName):
         self.initial_rc_cutoff = initial_rc_cutoff
         self.num_allowable_skips = num_allowable_skips
         self.step = step
@@ -14,7 +14,7 @@ class AlteredReducedCostCustomSummary(AbstractCustomGraphSummary):
         self.num_iterations = 0
         self.zero_cutoff = self.initial_rc_cutoff == 0
         AbstractCustomGraphSummary.__init__(self, g, oid_to_uri, uri_to_oid, dbname, macro_filename, merge_log_filename,
-                                            iterative_log_filename, log_factor)
+                                            iterative_log_filename, log_factor,dbSerializationName)
 
 
     def generate_original_unvisited(self):

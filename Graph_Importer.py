@@ -62,4 +62,6 @@ def import_graph_regular(dbname, cutoff=50, year_s=1990, year_e=1992,include_rea
 def can_skip(s,p,o):
     if o[0] == '"':
         return True
+    if s == o:
+        return True
     return False

@@ -9,7 +9,7 @@ from Node_Profile import Node_Profile
 from Graph_Summary import Abstract_Graph_Summary
 
 class AbstractCustomGraphSummary(Abstract_Graph_Summary):
-    def __init__(self,g,oid_to_uri,uri_to_oid,dbname,macro_filename,merge_log_filename,iterative_log_filename,log_factor,correction_both_directions=False):
+    def __init__(self,g,oid_to_uri,uri_to_oid,dbname,macro_filename,merge_log_filename,iterative_log_filename,log_factor,dbSerializationName,correction_both_directions=False):
         """
         :type g: ig.Graph
         :param g:
@@ -24,8 +24,8 @@ class AbstractCustomGraphSummary(Abstract_Graph_Summary):
         self.iterative = open(iterative_log_filename,"w")
         self.iterative_log_factor = log_factor
 
-        self.merge_logger = Single_Merge_Logger.Single_Merge_Logger(self.merge_log, self)
-        self.name_table, self.super_nodes = Node_Name_Table.make_table_and_nodes_from_db(dbname)
+        self.merge_logger = Single_Merge_Logger.Single_Merge_Logger(self.merge_log, self,dbSerializationName)
+        self.name_table, self.super_nodes = Node_Name_Table.make_table_and_nodes_from_db(dbname,fulldb=False)
         #print "Table load done"
         self.on_before_summarization()
         self.additions = {}
@@ -144,6 +144,16 @@ class AbstractCustomGraphSummary(Abstract_Graph_Summary):
                     else:
                         non_edges.append((snode_to_index[supernode.name],snode_to_index[neighbor]))
                         self.add_additions(supernode,self.name_table.get_supernode(neighbor))
+            if supernode.self_loop_tuple[0] > 0:
+                t = supernode.self_loop_tuple
+                a = t[0]
+                p = t[1]
+                if p - a + 1 <= a:
+                    edges.append((snode_to_index[supernode.name], snode_to_index[supernode.name]))
+                    self.add_subtractions(supernode, supernode)
+                else:
+                    #non_edges.append((snode_to_index[supernode.name], snode_to_index[neighbor])) #This shouldn't be necessary for self loops
+                    self.add_additions(supernode, supernode)
             visited.add(supernode.name)
         summary = ig.Graph(directed=False)
         summary.add_vertices(snode_count)
@@ -163,6 +173,7 @@ class AbstractCustomGraphSummary(Abstract_Graph_Summary):
         unvisited = self.generate_original_unvisited()
         start = time.time()
         initial_unvisited_size = len(unvisited)
+        next_time_to_log = self.iterative_log_factor
 
         while len(unvisited) > 0:
             #print "Unvisited: " + str(len(unvisited))
@@ -175,7 +186,10 @@ class AbstractCustomGraphSummary(Abstract_Graph_Summary):
             self.update_unvisited(unvisited, to_merge, u, merged_node)
             #if num_iterations < 100 or True:
             #    print(num_iterations)
-            if self.num_iterations % self.iterative_log_factor == 0: #self.factor_to_log is not None and num_iterations % self.factor_to_log == 0:
+            perc_done = float(initial_unvisited_size - len(unvisited)) / float(initial_unvisited_size)
+            print("PercDone: "+ str(perc_done))
+            if perc_done >= next_time_to_log: #self.factor_to_log is not None and num_iterations % self.factor_to_log == 0:
+                next_time_to_log += self.iterative_log_factor
                 now = time.time()
                 time_elapsed = now - start
                 total_time = 'NA'
@@ -186,6 +200,16 @@ class AbstractCustomGraphSummary(Abstract_Graph_Summary):
                 print("Elapsed time: %d, Estimated Time Remaining: %f" % (time_elapsed, remainder))
                 print(self.macro_filename + " " + "Elapsed time: %d, Estimated Time Remaining: %f" % (time_elapsed, remainder))
                 self.iterative_logging(time_elapsed, len(unvisited), initial_unvisited_size, unvisited)
+            if self.num_iterations % 100 == 0:
+                now = time.time()
+                time_elapsed = now - start
+                total_time = 'NA'
+                remainder = 'NA'
+                if initial_unvisited_size != len(unvisited):
+                    total_time = time_elapsed * float(initial_unvisited_size) / float(
+                        initial_unvisited_size - len(unvisited))
+                    remainder = total_time - time_elapsed
+                print("Elapsed time: %d, Estimated Time Remaining: %s" % (time_elapsed, str(remainder)))
             """if self.early_terminate is not None:
                 time_elapsed = time.time() - start
                 if time_elapsed >= self.early_terminate:
@@ -242,7 +266,7 @@ class AbstractCustomGraphSummary(Abstract_Graph_Summary):
             print("%d,%f,%d,%f" % (time_elapsed,float(unvisited_size)/initial_unvisited_size, self.get_iterative_cost(), self.get_iterative_compression_ratio()), file=self.iterative)
             self.iterative.flush()
         if self.merge_logger is not None:
-            self.merge_logger.log_state_sample(time_elapsed,unvisited.copy(),10,self.uri_to_oid)
+            self.merge_logger.log_state_sample(time_elapsed, unvisited.copy(), 10)
 
     def final_logging(self):
         print("----------Summary----------",file=self.macro)
@@ -319,10 +343,10 @@ class Node_Name_Table(object):
         #self.names = {v['name']:Node_Profile.make_node_profile_from_original_node(v,graph,self) for v in graph.vs}
 
     @staticmethod
-    def make_table_and_nodes_from_db(dbname,cutoff=50, year_s=1990, year_e=1992,include_real_name=False):
+    def make_table_and_nodes_from_db(dbname,cutoff=50, year_s=1990, year_e=1992,include_real_name=False,fulldb=True):
         cnxn = odbc.connect(r'Driver={SQL Server};Server=.\SQLEXPRESS;Database=' + dbname + r';Trusted_Connection=yes;')
         cursor = cnxn.cursor()
-        if dbname == "DBLP4":
+        if dbname == "DBLP4" and not fulldb:
             year_start = year_s
             year_end = year_e
             lim_num_docs = cutoff
@@ -331,12 +355,8 @@ class Node_Name_Table(object):
             cursor.execute(q)
         else:
             cursor.execute(
-                """SELECT * FROM RDF WHERE [Object] NOT LIKE '%"%' AND [Object] LIKE '%[^0-9]%' AND [Subject] NOT LIKE '%"%' AND [Subject] LIKE '%[^0-9]%' AND [Object] NOT LIKE '%Disease_Annotation>%'
-                AND [Object] NOT IN (SELECT TOP 12 [Object]
-                                          FROM [dbo].[RDF]
-                                          GROUP BY [Object]
-                                          HAVING COUNT(*) >= 100
-                                          ORDER BY COUNT(*) DESC)
+                """SELECT * FROM RDF WHERE [Object] NOT LIKE '%"%' AND [Object] NOT LIKE '%#%' AND [Object] LIKE '%<%' AND [Predicate] NOT LIKE '%#type%'
+                AND [Object] LIKE '%[^0-9]%' AND [Subject] NOT LIKE '%"%' AND [Subject] LIKE '%[^0-9]%' AND [Object] NOT LIKE '%Disease_Annotation>%'
             """)
         count = 0
         nt = Node_Name_Table()
@@ -360,9 +380,9 @@ class Node_Name_Table(object):
             nt.names[object_name].add_original_edge_to(subject_name)
 
             count += 1
-            if count % 200 == 0:
+            if count % 10000 == 0:
                 print(count)
-            if dbname != "DBLP4" and count >= cutoff:
+            if dbname != "DBLP4" and count >= cutoff and not fulldb:
                 break
 
         cnxn.close()
@@ -371,6 +391,8 @@ class Node_Name_Table(object):
     @staticmethod
     def can_skip(s, p, o):
         if o[0] == '"':
+            return True
+        if s == o:
             return True
         return False
 

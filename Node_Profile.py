@@ -1,7 +1,8 @@
+import operator as op
 class Node_Profile(object):
     max_supernode_index = 0
 
-    def __init__(self,name,contains,name_table,size,neighbor_names,edge_connections,cost,is_original=False):
+    def __init__(self,name,contains,name_table,size,neighbor_names,edge_connections,cost,self_loop_tuple,is_original=False):
         """
         :type name_table: Node_Name_Table
         :param name:
@@ -19,17 +20,17 @@ class Node_Profile(object):
         self.edge_connections = edge_connections
         self.cost = cost
         self.is_original=is_original
+        self.self_loop_tuple = self_loop_tuple
 
     @staticmethod
     def make_blank_node(name,name_table,is_original=True):
-        return Node_Profile(name,{name},name_table,1,set(),{},0,is_original)
+        return Node_Profile(name,{name},name_table,1,set(),{},0,(0,1,0),is_original=is_original)
 
     def add_original_edge_to(self,neighbor):
-        if neighbor not in self.neighbor_names:
+        if neighbor not in self.neighbor_names and neighbor != self.name:
             self.cost += 1
             self.neighbor_names.add(neighbor)
             self.edge_connections[neighbor] = (1,1,1)
-
 
     def update_neighbors(self):
         updated = set()
@@ -40,6 +41,21 @@ class Node_Profile(object):
                 new_name = new_node.name
                 if new_name not in updated:
                     self.neighbor_names.add(new_name)
+                    #print self.edge_connections
+                    #print self.name
+                    #print new_name
+                    #print new_node.edge_connections
+                    if self.name == new_name:
+                        print "THIS SHOULDNT HAPPEN"
+                        """t = self.edge_connections[self.name]
+                        a = t[0] if t[0] != 0 else 1
+                        p = ncr(self.size,2)
+                        cost = None
+                        if p - a + 1 <= a:
+                            cost = p - a + 1
+                        else:
+                            cost = a
+                        self.edge_connections[new_name] = (a,p,cost)"""
                     self.edge_connections[new_name] = new_node.edge_connections[self.name]
                     self.cost += self.edge_connections[new_name][2]
                     updated.add(new_name)
@@ -50,6 +66,8 @@ class Node_Profile(object):
     def get_edge_tuple(self,neighbor):
         if neighbor in self.neighbor_names:
             return self.edge_connections[neighbor]
+        elif neighbor == self.name:
+            return self.self_loop_tuple
         else:
             n_size = self.name_table.get_supernode_size(neighbor)
             return (0,self.size*n_size,0)
@@ -63,15 +81,20 @@ class Node_Profile(object):
         self.update_neighbors()
         v.update_neighbors()
         joined_neighbors = self.neighbor_names.union(v.neighbor_names)
-        joined_edges = []
+        if self.name in joined_neighbors:
+            joined_neighbors.remove(self.name)
+        if v.name in joined_neighbors:
+            joined_neighbors.remove(v.name)
+
+        self_loop_tuple = Node_Profile.get_merged_self_loop_tuple(self,v)
+        joined_cost = self_loop_tuple[2]
         for n in joined_neighbors:
-            joined_edges.append(Node_Profile.merge_edge_tuple(self.get_edge_tuple(n),v.get_edge_tuple(n)))
-        joined_cost = sum(t[2] for t in joined_edges)
+            joined_cost += Node_Profile.merge_edge_tuple(self.get_edge_tuple(n),v.get_edge_tuple(n))[2]
         return float(self.cost + v.cost - joined_cost) / (self.cost + v.cost), self.cost + v.cost - joined_cost
 
 
     @staticmethod
-    def merge_edge_tuple(t1,t2):
+    def merge_edge_tuple(t1, t2):
         a = t1[0] + t2[0]
         p = t1[1] + t2[1]
         cost = None
@@ -133,6 +156,27 @@ class Node_Profile(object):
         return new_np
 
     @staticmethod
+    def get_merged_self_loop_tuple(u,v):
+        """
+        :type u: Node_Profile
+        :type v: Node_Profile
+        :param u:
+        :param v:
+        :return:
+        """
+        self_loop_actual = u.self_loop_tuple[0] + v.self_loop_tuple[0]
+        if u.name in v.neighbor_names or v.name in u.neighbor_names:
+            u_tuple = u.get_edge_tuple(v.name)
+            v_tuple = v.get_edge_tuple(u.name)
+            assert u_tuple[0] == v_tuple[0]
+            self_loop_actual += u_tuple[0]
+        self_loop_potential = ncr(u.size + v.size, 2)
+        self_loop_cost = self_loop_actual
+        if self_loop_potential - self_loop_actual + 1 <= self_loop_actual:
+            self_loop_cost = self_loop_potential - self_loop_actual + 1
+        return self_loop_actual,self_loop_potential,self_loop_cost
+
+    @staticmethod
     def merge(u,v,name_table):
         """
         :type name_table: Node_Name_Table
@@ -147,12 +191,21 @@ class Node_Profile(object):
         name = Node_Profile.get_next_name_and_increment()
         contains = u.contains.union(v.contains)
         size = u.size + v.size
-        neighor_names = u.neighbor_names.union(v.neighbor_names)
-        edge_connections = {n:Node_Profile.merge_edge_tuple(u.get_edge_tuple(n), v.get_edge_tuple(n)) for n in neighor_names}
-        cost = sum([t[2] for t in edge_connections.values()])
-        new_np = Node_Profile(name,contains,name_table,size,neighor_names,edge_connections,cost)
+        neighbor_names = u.neighbor_names.union(v.neighbor_names)
+        if u.name in neighbor_names:
+            neighbor_names.remove(u.name)
+        if v.name in neighbor_names:
+            neighbor_names.remove(v.name)
+        edge_connections = {n:Node_Profile.merge_edge_tuple(u.get_edge_tuple(n), v.get_edge_tuple(n)) for n in neighbor_names}
+
+        self_loop_tuple = Node_Profile.get_merged_self_loop_tuple(u,v)
+
+        cost = sum([t[2] for t in edge_connections.values()]) + self_loop_tuple[2]
+        new_np = Node_Profile(name,contains,name_table,size,neighbor_names,edge_connections,cost,self_loop_tuple)
         name_table.update_name(u.name ,name,new_np)
         name_table.update_name(v.name, name,new_np)
+        #for neighbor_name in neighbor_names:
+            #name_table.get_supernode(neighbor_name).update_neighbors()
         return new_np
 
     @staticmethod
@@ -186,3 +239,11 @@ class Node_Profile(object):
 
     def __eq__(self, other):
         return self.name == other.name
+
+
+def ncr(n, r):
+    r = min(r, n - r)
+    if r == 0: return 1
+    numer = reduce(op.mul, xrange(n, n - r, -1))
+    denom = reduce(op.mul, xrange(1, r + 1))
+    return numer // denom
