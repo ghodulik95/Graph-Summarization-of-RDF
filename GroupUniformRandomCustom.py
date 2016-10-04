@@ -13,9 +13,6 @@ class GroupUniformRandomCustom(AbstractCustomGraphSummary):
     def node_select(self, s):
         return random.sample(s,1)[0]
 
-    def get_merge_candidates(self, u):
-        return u.get_two_hop_neighbors()
-
     def filter_merge_candidates(self, u, merge_candidates):
         assert u not in merge_candidates
         merge_reduced_costs = {mc:u.calc_SUV(mc) for mc in merge_candidates}

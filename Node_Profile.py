@@ -132,6 +132,11 @@ class Node_Profile(object):
         :param table:
         :return:
         """
+        curr_profile = group.pop()
+        for node in group:
+            curr_profile = Node_Profile.merge(curr_profile,node,table)
+        return curr_profile
+        """
         all_neighbors = set()
         all_contains = set()
         total_size = 0
@@ -153,7 +158,7 @@ class Node_Profile(object):
         new_np = Node_Profile(new_name,all_contains,table,total_size,all_neighbors,edge_tuples,cost)
         for n in group:
             table.update_name(n.name,new_name,new_np)
-        return new_np
+        return new_np"""
 
     @staticmethod
     def get_merged_self_loop_tuple(u,v):
@@ -204,8 +209,8 @@ class Node_Profile(object):
         new_np = Node_Profile(name,contains,name_table,size,neighbor_names,edge_connections,cost,self_loop_tuple)
         name_table.update_name(u.name ,name,new_np)
         name_table.update_name(v.name, name,new_np)
-        #for neighbor_name in neighbor_names:
-            #name_table.get_supernode(neighbor_name).update_neighbors()
+        for neighbor_name in neighbor_names:
+            name_table.get_supernode(neighbor_name).update_neighbors()
         return new_np
 
     @staticmethod
@@ -221,7 +226,8 @@ class Node_Profile(object):
             n_snode = self.name_table.get_supernode(n)
             n_snode.update_neighbors()
             two_hop.update(n_snode.neighbor_names)
-        two_hop.remove(self.name)
+        if self.name in two_hop:
+            two_hop.remove(self.name)
         return two_hop
 
     def get_two_hop_neighbors(self):

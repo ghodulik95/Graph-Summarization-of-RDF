@@ -5,7 +5,7 @@ import random
 
 
 class AlteredReducedCostCustomSummary(AbstractCustomGraphSummary):
-    def __init__(self, g, oid_to_uri, uri_to_oid, dbname, macro_filename, merge_log_filename, iterative_log_filename,log_factor,initial_rc_cutoff,num_allowable_skips,step,dbSerializationName):
+    def __init__(self, g, oid_to_uri, uri_to_oid, dbname, macro_filename, merge_log_filename, iterative_log_filename,log_factor,initial_rc_cutoff,num_allowable_skips,step,dbSerializationName,num_merges_to_log,remove_one_degree=False,merge_identical=False):
         self.initial_rc_cutoff = initial_rc_cutoff
         self.num_allowable_skips = num_allowable_skips
         self.step = step
@@ -14,17 +14,19 @@ class AlteredReducedCostCustomSummary(AbstractCustomGraphSummary):
         self.num_iterations = 0
         self.zero_cutoff = self.initial_rc_cutoff == 0
         AbstractCustomGraphSummary.__init__(self, g, oid_to_uri, uri_to_oid, dbname, macro_filename, merge_log_filename,
-                                            iterative_log_filename, log_factor,dbSerializationName)
+                                            iterative_log_filename, log_factor,dbSerializationName,num_merges_to_log,remove_one_degree=False,merge_identical=False)
 
+    def get_iterative_headers(self):
+        return "Time,PercentFinished,Cost,CompressionRatio,Cutoff"
+
+    def get_iterative_entry(self,time_elapsed, unvisited_size, initial_unvisited_size):
+        return "%d,%f,%d,%f,%f" % (time_elapsed,1 - float(unvisited_size)/initial_unvisited_size, self.get_iterative_cost(), self.get_iterative_compression_ratio(),self.cur_cutoff)
 
     def generate_original_unvisited(self):
         return self.super_nodes.copy()
 
     def node_select(self, s):
         return random.sample(s, 1)[0]
-
-    def get_merge_candidates(self, u):
-        return u.get_two_hop_neighbors()
 
     def filter_merge_candidates(self, u, merge_candidates):
         best_suv = self.cur_cutoff
@@ -45,7 +47,7 @@ class AlteredReducedCostCustomSummary(AbstractCustomGraphSummary):
                     self.cur_cutoff = 0
                     self.zero_cutoff = True
                 self.cur_skips = 0
-        print self.cur_cutoff
+        #print self.cur_cutoff
         self.cost_reduction += best_cost_reduction
         return best_node
 

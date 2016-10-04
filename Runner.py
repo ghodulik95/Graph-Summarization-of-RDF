@@ -10,26 +10,26 @@ import Graph_Exporter
 import igraph as ig
 from UniformRandomCustom import UniformRandomCustom
 
-graph, oid_to_uri,uri_to_oid, = Graph_Importer.import_graph_regular("DBLP4",include_real_name=True)
+graph, oid_to_uri,uri_to_oid, = Graph_Importer.import_graph_regular("DBLP4",include_real_name=True,fulldb=True)
 print "Import done"
 
-g = UniformRandomCustom(graph,oid_to_uri,uri_to_oid,"DBLP4","AlteredCustomTestMacro.txt","AlteredCustomMerge.csv","AlteredCustomIterative.csv",0.05,"DBLP4Small")
+g = UniformRandomCustom(graph,oid_to_uri,uri_to_oid,"DBLP4","DBLP500Custom.txt","DBLP500CustomMerge.csv","DBLP500CustomIteratuve.csv",0.05,"DBLP4Testtt",10,True,True)
 
-Graph_Exporter.export_summary(g,"DBLP4","AlteredCustom")
-
+Graph_Exporter.export_summary(g,"DBLP4","DBLP500Custom")
+"""
 layout = graph.layout("kk")
 visual_style = {}
 visual_style["layout"] = layout
 visual_style["bbox"] = (1000, 1000)
-ig.plot(graph, **visual_style).save("AlteredCustomTestOriginal.png")
+ig.plot(graph, **visual_style).save("DBLP500CustomTestOriginal.png")
 
 graph = g.s
 layout = graph.layout("kk")
 visual_style = {}
 visual_style["layout"] = layout
 visual_style["bbox"] = (1000, 1000)
-ig.plot(graph, **visual_style).save("AlteredCustomTestSummary.png")
-"""
+ig.plot(graph, **visual_style).save("DBLP500CustomTestSummary.png")
+
 
 graph, oid_to_uri,uri_to_oid, = Graph_Importer.import_graph_regular("DBLP4")
 print "Import done"

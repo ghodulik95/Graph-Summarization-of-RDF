@@ -9,7 +9,7 @@ from Node_Profile import Node_Profile
 from Graph_Summary import Abstract_Graph_Summary
 
 class AbstractCustomGraphSummary(Abstract_Graph_Summary):
-    def __init__(self,g,oid_to_uri,uri_to_oid,dbname,macro_filename,merge_log_filename,iterative_log_filename,log_factor,dbSerializationName,correction_both_directions=False):
+    def __init__(self,g,oid_to_uri,uri_to_oid,dbname,macro_filename,merge_log_filename,iterative_log_filename,log_factor,dbSerializationName,num_merges_to_log,remove_one_degree=False,merge_identical=False,correction_both_directions=False):
         """
         :type g: ig.Graph
         :param g:
@@ -17,22 +17,32 @@ class AbstractCustomGraphSummary(Abstract_Graph_Summary):
         self.g = g
         self.oid_to_uri = oid_to_uri
         self.uri_to_oid = uri_to_oid
+        if remove_one_degree:
+            one_degree = self.g.vs.select(_degree=1)
+            self.g.delete_vertices(one_degree)
+            self.oid_to_uri = {}
+            self.uri_to_oid = {}
+            for v in self.g.vs:
+                self.oid_to_uri[v.index] = v['name']
+                self.uri_to_oid[v['name']] = v.index
+        self.merge_identical = merge_identical
         self.correction_both_directions = correction_both_directions
         self.macro_filename = macro_filename
         self.macro = open(macro_filename,"w")
         self.merge_log = open(merge_log_filename,"w")
         self.iterative = open(iterative_log_filename,"w")
         self.iterative_log_factor = log_factor
+        self.num_merges_to_log = num_merges_to_log
 
         self.merge_logger = Single_Merge_Logger.Single_Merge_Logger(self.merge_log, self,dbSerializationName)
-        self.name_table, self.super_nodes = Node_Name_Table.make_table_and_nodes_from_db(dbname,fulldb=False)
+        self.name_table, self.super_nodes = Node_Name_Table.make_table_and_nodes_from_db(dbname,self.uri_to_oid,fulldb=True)
         #print "Table load done"
-        self.on_before_summarization()
         self.additions = {}
         self.subtractions = {}
         self.cost_reduction = 0
         self.summarize_time = -1
         self.num_iterations = 0
+        self.on_before_summarization()
         self.summarize()
         self.s, self.snode_to_index, self.oid_to_sname = self.make_summary()
         #print "Done summarizing"
@@ -44,7 +54,26 @@ class AbstractCustomGraphSummary(Abstract_Graph_Summary):
         #print "Finished"
 
     def on_before_summarization(self):
-        pass
+        if self.merge_identical:
+            neighbors_to_nodes = {}
+            for supernode in self.super_nodes:
+                sorted_neighbors = tuple(sorted(list(supernode.neighbor_names)))
+                if sorted_neighbors not in neighbors_to_nodes:
+                    neighbors_to_nodes[sorted_neighbors] = []
+                neighbors_to_nodes[sorted_neighbors].append(supernode)
+            savings = {t:len(t)*len(neighbors_to_nodes[t]) for t in neighbors_to_nodes.keys()}
+            sorted_keys_for_merge = sorted(savings.keys(), key= lambda t: -savings[t])
+            sorted_nodes_to_merge = [neighbors_to_nodes[t] for t in sorted_keys_for_merge]
+            sorted_nodes_to_merge = filter(lambda x: len(x) > 1, sorted_nodes_to_merge)
+            #visited = set()
+            for nodes in sorted_nodes_to_merge:
+                #if len(set(nodes).intersection(visited)) == 0:
+                prev_cost = sum([n.cost for n in nodes])
+                new_node = Node_Profile.merge_group(nodes,self.name_table)
+                new_cost = new_node.cost
+                self.cost_reduction += prev_cost - new_cost
+            self.super_nodes = set(self.name_table.get_all_supernodes())
+                #visited.update(nodes)
 
     def add_subtractions(self, u, v):
         for in_u in u.contains:
@@ -187,7 +216,6 @@ class AbstractCustomGraphSummary(Abstract_Graph_Summary):
             #if num_iterations < 100 or True:
             #    print(num_iterations)
             perc_done = float(initial_unvisited_size - len(unvisited)) / float(initial_unvisited_size)
-            print("PercDone: "+ str(perc_done))
             if perc_done >= next_time_to_log: #self.factor_to_log is not None and num_iterations % self.factor_to_log == 0:
                 next_time_to_log += self.iterative_log_factor
                 now = time.time()
@@ -197,7 +225,7 @@ class AbstractCustomGraphSummary(Abstract_Graph_Summary):
                 if initial_unvisited_size != len(unvisited):
                     total_time = time_elapsed * float(initial_unvisited_size) / float(initial_unvisited_size - len(unvisited))
                     remainder = total_time - time_elapsed
-                print("Elapsed time: %d, Estimated Time Remaining: %f" % (time_elapsed, remainder))
+                #print("Elapsed time: %d, Estimated Time Remaining: %f" % (time_elapsed, remainder))
                 print(self.macro_filename + " " + "Elapsed time: %d, Estimated Time Remaining: %f" % (time_elapsed, remainder))
                 self.iterative_logging(time_elapsed, len(unvisited), initial_unvisited_size, unvisited)
             if self.num_iterations % 100 == 0:
@@ -209,16 +237,15 @@ class AbstractCustomGraphSummary(Abstract_Graph_Summary):
                     total_time = time_elapsed * float(initial_unvisited_size) / float(
                         initial_unvisited_size - len(unvisited))
                     remainder = total_time - time_elapsed
-                print("Elapsed time: %d, Estimated Time Remaining: %s" % (time_elapsed, str(remainder)))
+                print(self.macro_filename + "Elapsed time: %d, Estimated Time Remaining: %s" % (time_elapsed, str(remainder)))
             """if self.early_terminate is not None:
                 time_elapsed = time.time() - start
                 if time_elapsed >= self.early_terminate:
                     print(self.macro_filename + " " + "Terminating early")
                     break"""
             self.num_iterations += 1
-
         self.summarize_time = time.time() - start
-
+        self.iterative_logging(self.summarize_time,0,initial_unvisited_size,unvisited)
         #self.final_logging(num_iterations, 0)
         #self.name_to_profile = {v['name']:Node_Profile(v,g,self.name_table) for v in g.vs}
 
@@ -259,14 +286,21 @@ class AbstractCustomGraphSummary(Abstract_Graph_Summary):
         #print("Articulation Points: "+str(articulation_points),file=self.macro)
 
         if self.iterative is not None:
-            print("Time,PercentFinished,Cost,CompressionRatio",file=self.iterative)
+            print(self.get_iterative_headers(),file=self.iterative)
+
+    def get_iterative_headers(self):
+        return "Time,PercentFinished,Cost,CompressionRatio"
+
+    def get_iterative_entry(self,time_elapsed, unvisited_size, initial_unvisited_size):
+        return "%d,%f,%d,%f" % (time_elapsed,1.0 - float(unvisited_size)/float(initial_unvisited_size), self.get_iterative_cost(), self.get_iterative_compression_ratio())
 
     def iterative_logging(self,time_elapsed, unvisited_size, initial_unvisited_size,unvisited):
         if self.iterative is not None:
-            print("%d,%f,%d,%f" % (time_elapsed,float(unvisited_size)/initial_unvisited_size, self.get_iterative_cost(), self.get_iterative_compression_ratio()), file=self.iterative)
+            print(self.get_iterative_entry(time_elapsed,unvisited_size,initial_unvisited_size), file=self.iterative)
             self.iterative.flush()
-        if self.merge_logger is not None:
-            self.merge_logger.log_state_sample(time_elapsed, unvisited.copy(), 10)
+
+        if self.merge_logger is not None and unvisited_size > 0:
+            self.merge_logger.log_state_sample(time_elapsed, unvisited.copy(), self.num_merges_to_log)
 
     def final_logging(self):
         print("----------Summary----------",file=self.macro)
@@ -299,7 +333,10 @@ class AbstractCustomGraphSummary(Abstract_Graph_Summary):
         :param u:
         :return:
         """
-        raise NotImplementedError()
+        two_hop = u.get_two_hop_neighbors()
+        if u in two_hop:
+            two_hop.remove(u)
+        return two_hop
 
     def filter_merge_candidates(self, u, merge_candidates):
         """
@@ -343,7 +380,7 @@ class Node_Name_Table(object):
         #self.names = {v['name']:Node_Profile.make_node_profile_from_original_node(v,graph,self) for v in graph.vs}
 
     @staticmethod
-    def make_table_and_nodes_from_db(dbname,cutoff=50, year_s=1990, year_e=1992,include_real_name=False,fulldb=True):
+    def make_table_and_nodes_from_db(dbname,uri_to_oid,cutoff=500, year_s=1990, year_e=1993,include_real_name=False,fulldb=True):
         cnxn = odbc.connect(r'Driver={SQL Server};Server=.\SQLEXPRESS;Database=' + dbname + r';Trusted_Connection=yes;')
         cursor = cnxn.cursor()
         if dbname == "DBLP4" and not fulldb:
@@ -369,7 +406,7 @@ class Node_Name_Table(object):
             object_name = row.Object
 
             # print subject_name+" "+predicate_name+" "+object_name
-            if Node_Name_Table.can_skip(subject_name, predicate_name, object_name):
+            if Node_Name_Table.can_skip(subject_name, predicate_name, object_name) or subject_name not in uri_to_oid or object_name not in uri_to_oid:
                 continue
 
             if subject_name not in nt.names:

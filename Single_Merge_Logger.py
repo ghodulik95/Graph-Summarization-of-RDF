@@ -84,7 +84,7 @@ class Single_Merge_Logger(Abstract_Merge_Logger):
                 if self.node_data['degrees'][v] > 0:
                     self.node_data['deg2hopRatio'].append( float(self.node_data['num2hop'][v]) / self.node_data['degrees'][v])
                 else:
-                    self.node_data['deg2hopRatio'][v].append( -1)
+                    self.node_data['deg2hopRatio'].append( -1)
                 art_proximitiy, art_closest = self.find_distance_to_articulation(v,neighbors,two_hop,articulation_points)
                 self.node_data['articulation_proximity'].append(art_proximitiy)
                 self.node_data['articulation_nearest'].append(art_closest)
@@ -208,17 +208,18 @@ class Single_Merge_Logger(Abstract_Merge_Logger):
             seed = ns.select_node(unvisited)
             candidates = list(self.get_merge_candidates(seed))
             reduced_costs = {n:self.calc_SUV(seed,n)[0] for n in candidates}
-            best = max(reduced_costs, key=lambda x: reduced_costs[x])
-            for c in candidates:
-                self.log_merge(seed,{best},
-                               identifier=identifier,
-                               reduced_cost=reduced_costs[c],
-                               u_contains=self.get_contains(seed,self.uri_to_oid),
-                               merge_contains=self.get_contains(c,self.uri_to_oid),
-                               is_best= c == best)
+            if len(reduced_costs) > 0:
+                best = max(reduced_costs, key=lambda x: reduced_costs[x])
+                for c in candidates:
+                    self.log_merge(seed,{best},
+                                   identifier=identifier,
+                                   reduced_cost=reduced_costs[c],
+                                   u_contains=self.get_contains(seed,self.uri_to_oid),
+                                   merge_contains=self.get_contains(c,self.uri_to_oid),
+                                   is_best= c == best)
 
-            unvisited.remove(seed)
-            numTried += 1
+                unvisited.remove(seed)
+                numTried += 1
 
 
 
