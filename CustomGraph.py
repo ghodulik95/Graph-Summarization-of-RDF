@@ -9,7 +9,7 @@ from Node_Profile import Node_Profile
 from Graph_Summary import Abstract_Graph_Summary
 
 class AbstractCustomGraphSummary(Abstract_Graph_Summary):
-    def __init__(self,g,oid_to_uri,uri_to_oid,dbname,macro_filename,merge_log_filename,iterative_log_filename,log_factor,dbSerializationName,num_merges_to_log,remove_one_degree=False,merge_identical=False,correction_both_directions=False):
+    def __init__(self,g,oid_to_uri,uri_to_oid,dbname,macro_filename,merge_log_filename,iterative_log_filename,log_factor,dbSerializationName,num_merges_to_log,remove_one_degree=False,merge_identical=False,correction_both_directions=False,early_terminate=None):
         """
         :type g: ig.Graph
         :param g:
@@ -17,6 +17,7 @@ class AbstractCustomGraphSummary(Abstract_Graph_Summary):
         self.g = g
         self.oid_to_uri = oid_to_uri
         self.uri_to_oid = uri_to_oid
+        self.early_terminate = early_terminate
         if remove_one_degree:
             one_degree = self.g.vs.select(_degree=1)
             self.g.delete_vertices(one_degree)
@@ -202,7 +203,7 @@ class AbstractCustomGraphSummary(Abstract_Graph_Summary):
         unvisited = self.generate_original_unvisited()
         start = time.time()
         initial_unvisited_size = len(unvisited)
-        next_time_to_log = self.iterative_log_factor
+        next_time_to_log = self.iterative_log_factor #0
 
         while len(unvisited) > 0:
             #print "Unvisited: " + str(len(unvisited))
@@ -226,7 +227,7 @@ class AbstractCustomGraphSummary(Abstract_Graph_Summary):
                     total_time = time_elapsed * float(initial_unvisited_size) / float(initial_unvisited_size - len(unvisited))
                     remainder = total_time - time_elapsed
                 #print("Elapsed time: %d, Estimated Time Remaining: %f" % (time_elapsed, remainder))
-                print(self.macro_filename + " " + "Elapsed time: %d, Estimated Time Remaining: %f" % (time_elapsed, remainder))
+                print(self.macro_filename + " " + "Elapsed time: %d, PercDone %f, Estimated Time Remaining: %f" % (time_elapsed, perc_done,remainder))
                 self.iterative_logging(time_elapsed, len(unvisited), initial_unvisited_size, unvisited)
             if self.num_iterations % 100 == 0:
                 now = time.time()
@@ -237,15 +238,13 @@ class AbstractCustomGraphSummary(Abstract_Graph_Summary):
                     total_time = time_elapsed * float(initial_unvisited_size) / float(
                         initial_unvisited_size - len(unvisited))
                     remainder = total_time - time_elapsed
-                print(self.macro_filename + "Elapsed time: %d, Estimated Time Remaining: %s" % (time_elapsed, str(remainder)))
-            """if self.early_terminate is not None:
-                time_elapsed = time.time() - start
-                if time_elapsed >= self.early_terminate:
-                    print(self.macro_filename + " " + "Terminating early")
-                    break"""
+                print(self.macro_filename + "Elapsed time: %d, PercDone %f, Estimated Time Remaining: %s" % (time_elapsed, perc_done,str(remainder)))
+            if self.early_terminate is not None and perc_done >= self.early_terminate:
+                print(self.macro_filename + " " + "Terminating early")
+                break
             self.num_iterations += 1
         self.summarize_time = time.time() - start
-        self.iterative_logging(self.summarize_time,0,initial_unvisited_size,unvisited)
+        self.iterative_logging(self.summarize_time,len(unvisited),initial_unvisited_size,unvisited)
         #self.final_logging(num_iterations, 0)
         #self.name_to_profile = {v['name']:Node_Profile(v,g,self.name_table) for v in g.vs}
 

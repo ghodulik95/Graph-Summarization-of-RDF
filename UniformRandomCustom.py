@@ -4,8 +4,8 @@ from CustomGraph import Node_Profile as NP
 import random
 
 class UniformRandomCustom(AbstractCustomGraphSummary):
-    def __init__(self,g,oid_to_uri,uri_to_oid,dbname,macro_filename,merge_log_filename,iterative_log_filename,log_factor,dbSerializationName,num_merges_to_log,remove_one_degree=False,merge_identical=False):
-        AbstractCustomGraphSummary.__init__(self,g,oid_to_uri,uri_to_oid,dbname,macro_filename,merge_log_filename,iterative_log_filename,log_factor,dbSerializationName,num_merges_to_log,remove_one_degree,merge_identical)
+    def __init__(self,g,oid_to_uri,uri_to_oid,dbname,macro_filename,merge_log_filename,iterative_log_filename,log_factor,dbSerializationName,num_merges_to_log,remove_one_degree=False,merge_identical=False,early_terminate=None):
+        AbstractCustomGraphSummary.__init__(self,g,oid_to_uri,uri_to_oid,dbname,macro_filename,merge_log_filename,iterative_log_filename,log_factor,dbSerializationName,num_merges_to_log,remove_one_degree,merge_identical,early_terminate=early_terminate)
 
     def generate_original_unvisited(self):
         return self.super_nodes.copy()
@@ -39,7 +39,8 @@ class UniformRandomCustom(AbstractCustomGraphSummary):
         #print unvisited
         unvisited.remove(u)
         if to_merge is not None:
-            unvisited.remove(to_merge)
+            if to_merge in unvisited:
+                unvisited.remove(to_merge)
             self.super_nodes.remove(u)
             self.super_nodes.remove(to_merge)
         if merged_node is not None:
