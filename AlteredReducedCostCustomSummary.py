@@ -5,7 +5,7 @@ import random
 
 
 class AlteredReducedCostCustomSummary(AbstractCustomGraphSummary):
-    def __init__(self, g, oid_to_uri, uri_to_oid, dbname, macro_filename, merge_log_filename, iterative_log_filename,log_factor,initial_rc_cutoff,num_allowable_skips,step,dbSerializationName,num_merges_to_log,remove_one_degree=False,merge_identical=False,early_terminate=None):
+    def __init__(self, g, oid_to_uri, uri_to_oid, dbname, macro_filename, merge_log_filename, iterative_log_filename,log_factor,initial_rc_cutoff,num_allowable_skips,step,dbSerializationName,num_merges_to_log,remove_one_degree=False,merge_identical=False,early_terminate=None,make_summary=True):
         self.initial_rc_cutoff = initial_rc_cutoff
         self.num_allowable_skips = num_allowable_skips
         self.step = step
@@ -14,7 +14,7 @@ class AlteredReducedCostCustomSummary(AbstractCustomGraphSummary):
         self.num_iterations = 0
         self.zero_cutoff = self.initial_rc_cutoff == 0
         AbstractCustomGraphSummary.__init__(self, g, oid_to_uri, uri_to_oid, dbname, macro_filename, merge_log_filename,
-                                            iterative_log_filename, log_factor,dbSerializationName,num_merges_to_log,remove_one_degree=False,merge_identical=False,early_terminate=early_terminate)
+                                            iterative_log_filename, log_factor,dbSerializationName,num_merges_to_log,remove_one_degree=False,merge_identical=False,early_terminate=early_terminate,make_summary=make_summary)
 
     def get_iterative_headers(self):
         return "Time,PercentFinished,Cost,CompressionRatio,Cutoff"

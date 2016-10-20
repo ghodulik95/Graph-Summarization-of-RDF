@@ -1,4 +1,7 @@
 import operator as op
+import heapq
+import random
+import time
 class Node_Profile(object):
     max_supernode_index = 0
 
@@ -245,6 +248,127 @@ class Node_Profile(object):
 
     def __eq__(self, other):
         return self.name == other.name
+
+class Node(object):
+    def __init___(self,obj,name,priority):
+        self.obj = obj
+        self.name = name
+        self.priority = priority
+
+    def __cmp__(self,other):
+        if isinstance(other, Node):
+            return self.priority - other.priority
+        raise TypeError("Cannot compare types")
+
+class AbstractScoredUnvisitedSet(object):
+    def __init__(self, scorer):
+        self.scorer = scorer
+
+    def add(self,item):
+        raise NotImplementedError()
+
+    def remove(self,item):
+        raise NotImplementedError()
+
+    def differenceUpdate(self,item):
+        raise NotImplementedError()
+
+    def pop(self):
+        raise NotImplementedError()
+
+    def __contains__(self, item):
+        raise NotImplementedError()
+
+    def __len__(self):
+        raise NotImplementedError()
+
+class ScoredRandomUnvisitedSet(AbstractScoredUnvisitedSet):
+    def __init__(self, scorer, supernodes):
+        AbstractScoredUnvisitedSet.__init__(self,scorer)
+        self.unvisited = []
+        self.scores = []
+        self.total_score = 0
+        for sn in supernodes:
+            self.unvisited.append(sn.name)
+            score = self.scorer.score(sn)
+            self.scores.append(score)
+            self.total_score += score
+        self.removed = set()
+        random.seed(time.time())
+
+    def add(self,item):
+        self.unvisited.append(item.name)
+        score = self.scorer.score(item)
+        self.scores.append(score)
+        self.total_score += score
+
+    def remove(self,item):
+        self.removed.add(item.name)
+        if len(self.removed) >= 0.5 * len(self.unvisited):
+            self.rebalance()
+
+    def rebalance(self):
+        old_unvisited = self.unvisited
+        self.unvisited = []
+        old_scores = self.scores
+        self.scores = []
+        self.total_score = 0
+        for i in range(len(old_unvisited)):
+            if old_unvisited[i] not in self.removed:
+                self.unvisited.append(old_unvisited[i])
+                score = old_scores[i]
+                self.scores.append(score)
+                self.total_score += score
+        self.removed.clear()
+
+    def __contains__(self, item):
+        return item.name not in self.removed
+
+    def __len__(self):
+        return len(self.unvisited) - len(self.removed)
+
+    def differenceUpdate(self,item):
+        self.remove(item)
+
+    def pick_random_node(self):
+        r = random.randint(1,self.total_score)
+        running_total = 0
+        for i in range(len(self.scores)):
+            running_total += self.scores[i]
+            if r <= running_total:
+                return self.unvisited[i]
+        raise Exception()
+
+    def pop(self):
+        ret = self.pick_random_node()
+        while ret in self.removed:
+            ret = self.pick_random_node()
+        return ret
+
+
+class ScoredHeapUnvisitedSet(AbstractScoredUnvisitedSet):
+    def __init__(self, scorer):
+        AbstractScoredUnvisitedSet.__init__(self, scorer)
+        self.unvisited = []
+        self.removed = set()
+
+    def add(self,item):
+        n = Node(item, item.name, self.scorer.score(item))
+        heapq.heappush(self.unvisited,n)
+
+    def remove(self,item):
+        self.removed.add(item.name)
+
+    def differenceUpdate(self,item):
+        self.remove(item)
+
+    def pop(self):
+        if len(self.unvisited) > 0:
+            ret = heapq.heappop(self.unvisited)
+            while ret.name in self.removed:
+                ret = heapq.heappop(self.unvisited)
+            return ret
+        return None
 
 
 def ncr(n, r):

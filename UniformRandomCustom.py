@@ -1,11 +1,13 @@
 from CustomGraph import AbstractCustomGraphSummary
 from CustomGraph import Node_Name_Table as NNT
 from CustomGraph import Node_Profile as NP
+import time
 import random
 
 class UniformRandomCustom(AbstractCustomGraphSummary):
-    def __init__(self,g,oid_to_uri,uri_to_oid,dbname,macro_filename,merge_log_filename,iterative_log_filename,log_factor,dbSerializationName,num_merges_to_log,remove_one_degree=False,merge_identical=False,early_terminate=None):
-        AbstractCustomGraphSummary.__init__(self,g,oid_to_uri,uri_to_oid,dbname,macro_filename,merge_log_filename,iterative_log_filename,log_factor,dbSerializationName,num_merges_to_log,remove_one_degree,merge_identical,early_terminate=early_terminate)
+    def __init__(self,g,oid_to_uri,uri_to_oid,dbname,macro_filename,merge_log_filename,iterative_log_filename,log_factor,dbSerializationName,num_merges_to_log,remove_one_degree=False,merge_identical=False,early_terminate=None,make_summary=True):
+        random.seed(time.time())
+        AbstractCustomGraphSummary.__init__(self,g,oid_to_uri,uri_to_oid,dbname,macro_filename,merge_log_filename,iterative_log_filename,log_factor,dbSerializationName,num_merges_to_log,remove_one_degree,merge_identical,early_terminate=early_terminate,make_summary=make_summary)
 
     def generate_original_unvisited(self):
         return self.super_nodes.copy()

@@ -204,7 +204,8 @@ class Single_Merge_Logger(Abstract_Merge_Logger):
     def log_state_sample(self,identifier,unvisited,numToTry=100):
         ns = Uniform_Random_Node_Selector()
         numTried = 0
-        while numTried < numToTry and len(unvisited) > 0:
+        visited = set()
+        while numTried < numToTry and len(unvisited) > len(visited):
             seed = ns.select_node(unvisited)
             candidates = list(self.get_merge_candidates(seed))
             reduced_costs = {n:self.calc_SUV(seed,n)[0] for n in candidates}
@@ -218,7 +219,7 @@ class Single_Merge_Logger(Abstract_Merge_Logger):
                                    merge_contains=self.get_contains(c,self.uri_to_oid),
                                    is_best= c == best)
 
-                unvisited.remove(seed)
+                visited.add(seed)
                 numTried += 1
 
 
