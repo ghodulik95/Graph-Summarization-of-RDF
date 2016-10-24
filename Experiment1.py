@@ -164,6 +164,9 @@ def run_experiment_1(num,appendage=""):
         logging.info(message)
         sendMessage(message)
 
+def run_experiment1_custom():
+    pass
+
 
 if __name__ == '__main__':
     #p = Pool(processes=4)

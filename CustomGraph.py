@@ -234,7 +234,7 @@ class AbstractCustomGraphSummary(Abstract_Graph_Summary):
                     total_time = time_elapsed * float(initial_unvisited_size) / float(initial_unvisited_size - len(unvisited))
                     remainder = total_time - time_elapsed
                 #print("Elapsed time: %d, Estimated Time Remaining: %f" % (time_elapsed, remainder))
-                print(self.macro_filename + " " + "Elapsed time: %d, PercDone %f, Estimated Time Remaining: %f" % (time_elapsed, perc_done,remainder))
+                print(self.macro_filename + " " + "Elapsed time: %d, PercDone %f, Estimated Time Remaining: %s" % (time_elapsed, perc_done,str(remainder)))
                 self.iterative_logging(time_elapsed, len(unvisited), initial_unvisited_size, unvisited)
             if self.num_iterations % 100 == 0:
                 now = time.time()

@@ -8,8 +8,8 @@ import os
 from multiprocessing import Process,Pool
 import itertools
 
-dbnames = ["DBLP4","IMDBSmall","SP2B","LUBM","uniprot","wordnet"]
-algs = ["Pure","Altered"]
+dbnames = ["wordnet"]#["DBLP4","IMDBSmall","SP2B","LUBM","uniprot","wordnet"]
+algs = ["Pure"]#["Pure","Altered"]
 remove_one_degree = [True, False]
 merge_identical = [True, False]
 #initial_rc_cutoff,num_allowable_skips,step
@@ -31,9 +31,9 @@ def get_filename(param_tuple):
 def get_early_terminate(param_tuple):
     if not param_tuple[2] and param_tuple[3]:
         if param_tuple[0] == 'Pure':
-            return None
+            return 0.9999
         if param_tuple[0] == 'Altered' and param_tuple[4] == (0.5,100,0.1):
-            return None
+            return 0.9999
     return 0.4
 
 def get_params():
@@ -71,6 +71,7 @@ def run_an_experiment(num):
     try:
 
         early_terminate = get_early_terminate(param_tuple)
+        make_summary = early_terminate is None
 
         filename_with_path = os.path.join(os.path.dirname(__file__),"Experiment1_Custom_Output/"+filename_prefix)
         logging.basicConfig(filename="Experiment1_Custom",level=logging.INFO)
@@ -99,7 +100,8 @@ def run_an_experiment(num):
                                                     num_merges_to_log=350,
                                                     remove_one_degree=param_tuple[2],
                                                     merge_identical=param_tuple[3],
-                                                    early_terminate=early_terminate)
+                                                    early_terminate=early_terminate,
+                                                    make_summary=make_summary)
             elif param_tuple[0] == 'Pure':
                 g = UniformRandomCustom(g=graph,
                                         oid_to_uri=oid_to_uri,
@@ -113,26 +115,25 @@ def run_an_experiment(num):
                                         num_merges_to_log=350,
                                         remove_one_degree=param_tuple[2],
                                         merge_identical=param_tuple[3],
-                                        early_terminate=early_terminate)
+                                        early_terminate=early_terminate,
+                                        make_summary=make_summary)
         except Exception as e:
-            print filename_prefix
-            print e
-            print e.message
             record_termination(filename_prefix+" failed on summarization: "+str(e.message),True)
             return -2
 
         if early_terminate is None:
             log(filename_prefix + " starting export")
-            #try:
-            Graph_Exporter.export_summary(g,param_tuple[1],filename_prefix)
-            #except Exception as e:
-            #    record_termination(filename_prefix+" failed on export: "+e.message,True)
-            #    return -3
+            try:
+                Graph_Exporter.export_summary(g,param_tuple[1],filename_prefix)
+            except Exception as e:
+                record_termination(filename_prefix+" failed on export: "+e.message,True)
+                return -3
             record_termination(filename_prefix+" finished successfully.",False)
             return 0
     except Exception as e:
         record_termination(filename_prefix + " failed somewhere else: " + str(e.message), True)
         return -4
+    record_termination(filename_prefix + " finished", False)
     
     
 
@@ -143,7 +144,7 @@ if __name__ == '__main__':
     #run_an_experiment(0)
     try:
         p = Pool(processes=1)
-        p.map(run_an_experiment, range(len(params)))
+        p.map(run_an_experiment, range(0,len(params)-1))
     except Exception as e:
-        record_termination("TOTAL FAILURE")
-        record_termination(e.message)
+        record_termination("TOTAL FAILURE",True)
+        record_termination(e.message,True)

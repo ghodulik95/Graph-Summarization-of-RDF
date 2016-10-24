@@ -14,7 +14,7 @@ class AlteredReducedCostCustomSummary(AbstractCustomGraphSummary):
         self.num_iterations = 0
         self.zero_cutoff = self.initial_rc_cutoff == 0
         AbstractCustomGraphSummary.__init__(self, g, oid_to_uri, uri_to_oid, dbname, macro_filename, merge_log_filename,
-                                            iterative_log_filename, log_factor,dbSerializationName,num_merges_to_log,remove_one_degree=False,merge_identical=False,early_terminate=early_terminate,make_summary=make_summary)
+                                            iterative_log_filename, log_factor,dbSerializationName,num_merges_to_log,remove_one_degree=remove_one_degree,merge_identical=merge_identical,early_terminate=early_terminate,make_summary=make_summary)
 
     def get_iterative_headers(self):
         return "Time,PercentFinished,Cost,CompressionRatio,Cutoff"

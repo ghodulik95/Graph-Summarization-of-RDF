@@ -4,8 +4,8 @@ from CustomGraph import Node_Profile as NP
 import random
 
 class GroupUniformRandomCustom(AbstractCustomGraphSummary):
-    def __init__(self,g,oid_to_uri,uri_to_oid,dbname,macro_filename,merge_log_filename,iterative_log_filename,log_factor):
-        AbstractCustomGraphSummary.__init__(self,g,oid_to_uri,uri_to_oid,dbname,macro_filename,merge_log_filename,iterative_log_filename,log_factor)
+    def __init__(self,g,oid_to_uri,uri_to_oid,dbname,macro_filename,merge_log_filename,iterative_log_filename,log_factor,dbSerializationName,num_merges_to_log,remove_one_degree=False,merge_identical=False,correction_both_directions=False,early_terminate=None,make_summary=True,log_merges=True):
+        AbstractCustomGraphSummary.__init__(self,g,oid_to_uri,uri_to_oid,dbname,macro_filename,merge_log_filename,iterative_log_filename,log_factor,dbSerializationName,num_merges_to_log,remove_one_degree,merge_identical,correction_both_directions,early_terminate,make_summary,log_merges)
 
     def generate_original_unvisited(self):
         return self.super_nodes.copy()
@@ -19,6 +19,10 @@ class GroupUniformRandomCustom(AbstractCustomGraphSummary):
         sorted_candidates = sorted(filter(lambda x: merge_reduced_costs[x] > 0, list(merge_reduced_costs.keys())), key=lambda y: merge_reduced_costs[y])
         curr_snode = u
         merged = {u}
+
+        if (len(sorted_candidates) == 0):
+            return (merged, None)
+
         first = True
 
         while len(sorted_candidates) > 0:
