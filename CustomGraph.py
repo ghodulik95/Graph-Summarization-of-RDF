@@ -406,7 +406,7 @@ class Node_Name_Table(object):
         #self.names = {v['name']:Node_Profile.make_node_profile_from_original_node(v,graph,self) for v in graph.vs}
 
     @staticmethod
-    def make_table_and_nodes_from_db(dbname,uri_to_oid,cutoff=500, year_s=1990, year_e=1993,include_real_name=False,fulldb=True):
+    def make_table_and_nodes_from_db(dbname,uri_to_oid,cutoff=50, year_s=1990, year_e=1992,include_real_name=False,fulldb=True):
         cnxn = odbc.connect(r'Driver={SQL Server};Server=.\SQLEXPRESS;Database=' + dbname + r';Trusted_Connection=yes;')
         cursor = cnxn.cursor()
         if dbname == "DBLP4" and not fulldb:

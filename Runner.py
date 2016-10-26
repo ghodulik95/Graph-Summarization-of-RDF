@@ -3,6 +3,7 @@
 #from Altered_Reduced_Cost_Summary import Altered_Reduced_Cost_Summary
 #from Group_Reduced_Cost_Summary import Single_Sweep_Group_Reduced_Cost_Summary
 #from Single_Sweep_Group_Altered_Reduced_Cost_Summary import Single_Sweep_Group_Altered_Reduced_Cost_Summary
+from LocalGreedyCustom import LocalGreedyCustom
 from GroupUniformRandomCustom import GroupUniformRandomCustom
 from AlteredReducedCostCustomSummary import AlteredReducedCostCustomSummary
 import Graph_Importer
@@ -10,26 +11,26 @@ import Graph_Exporter
 import igraph as ig
 from UniformRandomCustom import UniformRandomCustom
 
-graph, oid_to_uri,uri_to_oid, = Graph_Importer.import_graph_regular("DBLP4",include_real_name=True,fulldb=True)
+graph, oid_to_uri,uri_to_oid, = Graph_Importer.import_graph_regular("DBLP4",include_real_name=True,fulldb=False)
 print "Import done"
 
-g = UniformRandomCustom(graph,oid_to_uri,uri_to_oid,"DBLP4","DBLP500Custom.txt","DBLP500CustomMerge.csv","DBLP500CustomIteratuve.csv",0.05,"DBLP4Testtt",10,True,True)
+g = LocalGreedyCustom(graph,oid_to_uri,uri_to_oid,"DBLP4","DBLP4LocalMacro.txt","DBLP4LocalMerge.csv","SP2BCustomIterative.csv",2,"DBLP500",10,remove_one_degree=False,merge_identical=True,early_terminate=0.9999,make_summary=True)
 
-Graph_Exporter.export_summary(g,"DBLP4","DBLP500Custom")
-"""
+#Graph_Exporter.export_summary(g,"SP2B","testingExport")
+
 layout = graph.layout("kk")
 visual_style = {}
 visual_style["layout"] = layout
 visual_style["bbox"] = (1000, 1000)
-ig.plot(graph, **visual_style).save("DBLP500CustomTestOriginal.png")
+ig.plot(graph, **visual_style).save("DBLP500LocalTestOriginal.png")
 
 graph = g.s
 layout = graph.layout("kk")
 visual_style = {}
 visual_style["layout"] = layout
 visual_style["bbox"] = (1000, 1000)
-ig.plot(graph, **visual_style).save("DBLP500CustomTestSummary.png")
-
+ig.plot(graph, **visual_style).save("DBLP500LocalTestSummary.png")
+"""
 
 graph, oid_to_uri,uri_to_oid, = Graph_Importer.import_graph_regular("DBLP4")
 print "Import done"

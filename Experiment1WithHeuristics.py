@@ -8,10 +8,11 @@ import os
 from multiprocessing import Process, Pool
 from NonUniformCustom import NonUniformRandomCustom
 from GroupUniformRandomCustom import GroupUniformRandomCustom
+from LocalGreedyCustom import LocalGreedyCustom
 import itertools
 
 dbnames = ["wordnet","IMDBSmall","DBLP4"]
-algs = ["Group","NonUniform","Pure","Altered"]
+algs = ["LocalGreedy" ]#"Group","NonUniform","Pure","Altered"]
 remove_one_degree = [True]
 merge_identical = [True]
 # initial_rc_cutoff,num_allowable_skips,step
@@ -144,6 +145,21 @@ def run_an_experiment(num):
                                            remove_one_degree=param_tuple[2],
                                            merge_identical=param_tuple[3],
                                            early_terminate=early_terminate,
+                                           make_summary=make_summary)
+            elif param_tuple[0] == 'LocalGreedy':
+                g = LocalGreedyCustom(g=graph,
+                                           oid_to_uri=oid_to_uri,
+                                           uri_to_oid=uri_to_oid,
+                                           dbname=param_tuple[1],
+                                           macro_filename=filename_with_path + "Macro.txt",
+                                           merge_log_filename=filename_with_path + "Merge.csv",
+                                           iterative_log_filename=filename_with_path + "Iterative.csv",
+                                           log_factor=0.05,
+                                           dbSerializationName=filename_prefix,
+                                           num_merges_to_log=0,
+                                           remove_one_degree=param_tuple[2],
+                                           merge_identical=param_tuple[3],
+                                           early_terminate=25000,
                                            make_summary=make_summary)
         except Exception as e:
             record_termination(filename_prefix + " failed on summarization: " + str(e.message), True)

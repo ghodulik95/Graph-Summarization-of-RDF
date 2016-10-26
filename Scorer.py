@@ -99,7 +99,7 @@ class IMDBScorer(Node_Data_Scorer):
                     ([('num2hop', 'max', lambda x: x >= 12)], 2),
                     ([('deg2hopRatio', 'max', lambda x: x < 5.1)], 2),
                     ([('degrees', 'min', lambda x: x < 34),
-                      ('deg2hopRatio', 'max', lambda x: x >= 171)], 3),
+                      ('deg2hopRatio', 'max', lambda x: x >= 171)], 3)
                 ]
 
 def numerical_comparison(input, min, max):
