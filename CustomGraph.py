@@ -480,6 +480,12 @@ class Node_Name_Table(object):
     def get_supernode(self,node_name):
         return self.names[self.get_supernode_name(node_name)]
 
+    def get_supernodes(self,names):
+        snodes = set()
+        for n in names:
+            snodes.add(self.get_supernode(n))
+        return snodes
+
     def is_current(self,name):
         return not isinstance(self.names[name],basestring)
 

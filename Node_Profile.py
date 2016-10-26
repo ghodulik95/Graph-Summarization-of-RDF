@@ -222,6 +222,17 @@ class Node_Profile(object):
         Node_Profile.max_supernode_index += 1
         return name
 
+    def get_two_hop_neighborhood_names(self):
+        neighborhood = self.get_two_hop_neighbor_names()
+        neighborhood.update(self.neighbor_names)
+        return neighborhood
+
+    def get_two_hop_neighborhood(self):
+        return self.name_table.get_supernodes(self.get_two_hop_neighbor_names())
+
+    def get_snodes(self,names):
+        return self.name_table.get_supernodes(names)
+
     def get_two_hop_neighbor_names(self):
         self.update_neighbors()
         two_hop = set()
@@ -239,6 +250,51 @@ class Node_Profile(object):
         for n in names:
             neighbors.add(self.name_table.get_supernode(n))
         return neighbors
+
+    @staticmethod
+    def tuple_edge_exists(t):
+        a = t[0]
+        p = t[1]
+        if p - a + 1 <= a:
+            return True
+        else:
+            return False
+
+    def superedge_exists(self,neighbor_name):
+        if neighbor_name not in self.neighbor_names and neighbor_name != self.name:
+            return False
+        t = self.get_edge_tuple(neighbor_name)
+        return Node_Profile.tuple_edge_exists(t)
+
+    def get_filtered_neighbors(self):
+        if self.is_original:
+            return self.neighbor_names
+        filtered_neighbors = set()
+        for n in self.neighbor_names:
+            if self.superedge_exists(n):
+                filtered_neighbors.add(n)
+        if Node_Profile.tuple_edge_exists(self.self_loop_tuple):
+            filtered_neighbors.add(self.name)
+        return filtered_neighbors
+
+    def get_num_neighbors(self):
+        return len(self.get_filtered_neighbors())
+
+    def get_num_shared_neighbors(self,other):
+        return len(self.get_filtered_neighbors().intersection(other.get_filtered_neighbors()))
+
+    def get_num_total_neighbors(self,other):
+        return len(self.get_filtered_neighbors().union(other.get_filtered_neighbors()))
+
+    def get_perc_shared_neighbors(self,other):
+        return float(self.get_num_shared_neighbors(other)) / float(self.get_num_total_neighbors(other))
+
+    def has_positive_merge(self):
+        for n in self.get_two_hop_neighbors():
+            suv,cost = self.calc_SUV(n)
+            if suv > 0:
+                return True
+        return False
 
     def __str__(self):
         return self.name
