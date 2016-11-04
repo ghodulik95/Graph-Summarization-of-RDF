@@ -18,7 +18,7 @@ class AbstractCustomGraphSummary(Abstract_Graph_Summary):
         self.oid_to_uri = oid_to_uri
         self.uri_to_oid = uri_to_oid
         self.dbname = dbname
-        self.early_terminate = early_terminate if early_terminate is not None and early_terminate <= 0.9999 else 0.9999
+        self.early_terminate = early_terminate #if early_terminate is not None and early_terminate <= 0.9999 else 0.9999
         if remove_one_degree:
             one_degree = self.g.vs.select(_degree=1)
             self.g.delete_vertices(one_degree)

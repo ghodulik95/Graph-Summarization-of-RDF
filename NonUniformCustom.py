@@ -25,11 +25,16 @@ class NonUniformRandomCustom(UniformRandomCustom):
             scorer = Scorer.WordnetScorer(self.merge_logger.node_data, self.merge_logger.uri_to_oid)
             unvisited = SRUS(scorer, self.super_nodes)
         elif self.dbname == "IMDBSmall":
-            print "GOOD"
             scorer = Scorer.IMDBScorer(self.merge_logger.node_data, self.merge_logger.uri_to_oid)
             unvisited = SRUS(scorer, self.super_nodes)
+        elif self.dbname == "LUBM":
+            scorer = Scorer.LUBMScorer(self.merge_logger.node_data, self.merge_logger.uri_to_oid)
+            unvisited = SRUS(scorer, self.super_nodes)
+        elif self.dbname == "SP2B":
+            scorer = Scorer.SP2BScorer(self.merge_logger.node_data, self.merge_logger.uri_to_oid)
+            unvisited = SRUS(scorer, self.super_nodes)
         else:
-            raise TypeError()
+            raise TypeError("Invalid Database")
         return unvisited
 
     def node_select(self, s):
