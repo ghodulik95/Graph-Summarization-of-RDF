@@ -141,6 +141,8 @@ class SummaryQueryer(AbstractQueryer):
         return s,m
 
     def get_corrections_table_name(self):
+        if self.summary == 'NonUniformSecondHeuristic':
+            return "SummaryCorrections_NonUniform"+self.dbname+'SecondHeuristic'
         name = "SummaryCorrections_"+self.summary+self.dbname
         if self.summary == 'Altered':
             name += "_50_100_1"

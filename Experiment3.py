@@ -7,11 +7,15 @@ import cPickle
 import itertools
 
 dbnames = ["DBLP4", "LUBM", "wordnet", "IMDBSmall"]
-algs = ["Pure","None","Altered","NonUniformSecondHerusitc"]
+algs = ["Pure","None","Altered","NonUniformSecondHeuristic"]
 
 def get_params():
     ret = []
     for element in itertools.product(dbnames,algs):
+        if element[0] == "LUBM" and element[1] == "Altered":
+            continue
+        if element[0] == "DBLP4":
+            continue
         ret.append(element)
     return ret
 
@@ -30,7 +34,7 @@ def get_random_queries(dbname,num_seeds=5,depth=4):
         for i in range(1,depth):
             print("started hop %d" % i)
             ihop = b.get_random_neighborhood(s,i)
-            if len(ihop) > 5:
+            if len(ihop) > 4:
                 end_points = random.sample(ihop,4)
             else:
                 end_points = ihop
@@ -67,11 +71,15 @@ def run_an_experiment(dbname,alg,queries,appendage):
         macro.flush()
         print("Completed Query Number %d out of %d" % (currQNum, numQs))
         currQNum += 1
+    q.close_connection()
 
 if __name__ == '__main__':
     random.seed(time.time())
     num_seeds = 10
     depth = 5
-    for p in get_params():
+    params = get_params()
+    #params = params[3:]
+    print(params)
+    for p in params:
         qs = get_random_queries(p[0], num_seeds,depth=depth)
-        run_an_experiment(p[0], p[1], qs, "Run1")
+        run_an_experiment(p[0], p[1], qs, "Run2NoIndex")
